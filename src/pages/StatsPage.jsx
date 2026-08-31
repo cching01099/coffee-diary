@@ -1,0 +1,129 @@
+import { useMemo, useState } from 'react'
+import { dateInPeriod, periodDayCount, periodLabelText } from '../lib/utils'
+
+function RankCard({ label, countMap, open, onToggle }) {
+  const sorted = useMemo(() => Object.entries(countMap).sort((a, b) => b[1] - a[1]), [countMap])
+  const topName = sorted.length ? sorted[0][0] : '—'
+
+  return (
+    <div className="bg-card rounded-2xl border border-line p-4">
+      <div onClick={onToggle} className="flex justify-between items-center cursor-pointer">
+        <div>
+          <div className="text-xs text-ink-dim">{label}</div>
+          <div className="font-bold text-lg text-accent mt-1">{topName}</div>
+        </div>
+        <span className={`text-ink-dim text-sm transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+      </div>
+      {open && (
+        <div className="mt-3 pt-1 border-t border-line">
+          {sorted.length === 0 ? (
+            <div className="text-ink-dim text-sm py-2.5">這段期間還沒有記錄</div>
+          ) : (
+            sorted.map(([name, count]) => (
+              <div key={name} className="flex justify-between items-center py-2.5">
+                <div className="text-sm">{name}</div>
+                <div className="font-semibold text-sm text-accent">{count} 杯</div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function StatsPage({ data }) {
+  const { entries } = data
+  const [period, setPeriod] = useState('month')
+  const [anchor, setAnchor] = useState(new Date())
+  const [beanOpen, setBeanOpen] = useState(false)
+  const [artOpen, setArtOpen] = useState(false)
+
+  function changePeriod(p) {
+    setPeriod(p)
+    setAnchor(new Date())
+  }
+  function changeNav(delta) {
+    const d = new Date(anchor)
+    if (period === 'week') d.setDate(d.getDate() + delta * 7)
+    else if (period === 'month') d.setMonth(d.getMonth() + delta)
+    else d.setFullYear(d.getFullYear() + delta)
+    setAnchor(d)
+  }
+
+  const { cups, avgPerDay, beanCount, artCount, photos } = useMemo(() => {
+    let cups = 0
+    const beanCount = {}
+    const artCount = {}
+    const photos = []
+    Object.keys(entries).forEach((key) => {
+      if (!dateInPeriod(key, period, anchor)) return
+      entries[key].forEach((e) => {
+        cups++
+        beanCount[e.bean] = (beanCount[e.bean] || 0) + 1
+        artCount[e.art] = (artCount[e.art] || 0) + 1
+        if (e.photo) photos.push({ src: e.photo, position: e.photoPosition })
+      })
+    })
+    const avgPerDay = cups / periodDayCount(period, anchor)
+    return { cups, avgPerDay, beanCount, artCount, photos }
+  }, [entries, period, anchor])
+
+  const cupsLabel = period === 'week' ? '本週杯數' : period === 'year' ? '本年杯數' : '本月杯數'
+
+  return (
+    <div>
+      <h1 className="font-bold text-2xl mb-4">統計</h1>
+
+      <div className="flex gap-2 mb-4">
+        {['week', 'month', 'year'].map((p) => (
+          <button
+            key={p}
+            onClick={() => changePeriod(p)}
+            className={`px-4 py-1.5 rounded-full border text-sm ${
+              period === p ? 'bg-cta border-cta text-bg' : 'border-line text-ink-dim'
+            }`}
+          >
+            {p === 'week' ? '週' : p === 'month' ? '月' : '年'}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mb-3">
+        <button onClick={() => changeNav(-1)} className="w-7 h-7 rounded-lg border border-line">‹</button>
+        <div className="text-ink-dim text-[13px]">{periodLabelText(period, anchor)}</div>
+        <button onClick={() => changeNav(1)} className="w-7 h-7 rounded-lg border border-line">›</button>
+      </div>
+
+      <div className="bg-card rounded-2xl border border-line p-3.5 grid grid-cols-8 gap-1.5 mb-4">
+        {photos.length === 0 ? (
+          <div className="col-span-8 text-center py-4 text-ink-dim text-sm">這段期間還沒有拍照的記錄</div>
+        ) : (
+          photos.map((p, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-md bg-cover"
+              style={{ backgroundImage: `url('${p.src}')`, backgroundPosition: p.position || '50% 50%' }}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5 mb-2.5">
+        <div className="bg-card rounded-2xl border border-line p-4">
+          <div className="text-xs text-ink-dim mb-1.5">{cupsLabel}</div>
+          <div className="text-[22px] font-bold text-accent">{cups}</div>
+        </div>
+        <div className="bg-card rounded-2xl border border-line p-4">
+          <div className="text-xs text-ink-dim mb-1.5">平均每天</div>
+          <div className="text-[22px] font-bold text-accent">{avgPerDay.toFixed(1)}<span className="text-[13px] text-ink-dim">杯</span></div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        <RankCard label="最愛咖啡豆品牌" countMap={beanCount} open={beanOpen} onToggle={() => setBeanOpen((v) => !v)} />
+        <RankCard label="最常拉花圖案" countMap={artCount} open={artOpen} onToggle={() => setArtOpen((v) => !v)} />
+      </div>
+    </div>
+  )
+}
