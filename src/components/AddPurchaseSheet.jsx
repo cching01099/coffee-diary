@@ -49,8 +49,8 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88vh] overflow-y-auto px-5 pt-5 pb-8">
-        <div className="flex justify-between items-center mb-5">
+      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88vh] overflow-y-auto pb-8">
+        <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button
             onClick={onClose}
             disabled={saving || deleting}
@@ -68,38 +68,40 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
           </button>
         </div>
 
-        {editPurchase && (
+        <div className="px-5 pt-5">
+          {editPurchase && (
+            <div className="mb-5">
+              <button
+                onClick={handleDeleteClick}
+                disabled={saving || deleting}
+                className="w-full text-center py-2.5 rounded-lg border border-[#8C3A2E] text-[#8C3A2E] disabled:opacity-50"
+              >
+                {deleting ? '刪除中...' : '刪除這筆採購'}
+              </button>
+            </div>
+          )}
+
           <div className="mb-5">
-            <button
-              onClick={handleDeleteClick}
-              disabled={saving || deleting}
-              className="w-full text-center py-2.5 rounded-lg border border-[#8C3A2E] text-[#8C3A2E] disabled:opacity-50"
-            >
-              {deleting ? '刪除中...' : '刪除這筆採購'}
-            </button>
+            <div className="text-xs text-ink-dim mb-2">日期</div>
+            <input type="date" className={`${inputClass} text-[15px] font-medium`} {...field('date')} />
           </div>
-        )}
 
-        <div className="mb-5">
-          <div className="text-xs text-ink-dim mb-2">日期</div>
-          <input type="date" className={`${inputClass} text-[15px] font-medium`} {...field('date')} />
-        </div>
-
-        <div className="mb-5">
-          <div className="text-xs text-ink-dim mb-2">咖啡豆（選填）</div>
-          <div className="flex flex-col gap-2">
-            <input placeholder="品牌，例如：吉本屋" className={inputClass} {...field('beanBrand')} />
-            <UnitInput type="number" placeholder="重量" inputMode="numeric" unit="g" {...field('beanWeight')} />
-            <UnitInput type="number" placeholder="花費" inputMode="numeric" unit="元" {...field('beanPrice')} />
+          <div className="mb-5">
+            <div className="text-xs text-ink-dim mb-2">咖啡豆（選填）</div>
+            <div className="flex flex-col gap-2">
+              <input placeholder="品牌，例如：吉本屋" className={inputClass} {...field('beanBrand')} />
+              <UnitInput type="number" placeholder="重量" inputMode="numeric" unit="g" {...field('beanWeight')} />
+              <UnitInput type="number" placeholder="花費" inputMode="numeric" unit="元" {...field('beanPrice')} />
+            </div>
           </div>
-        </div>
 
-        <div className="mb-2">
-          <div className="text-xs text-ink-dim mb-2">牛奶（選填）</div>
-          <div className="flex flex-col gap-2">
-            <input placeholder="品牌，例如：光泉全脂" className={inputClass} {...field('milkBrand')} />
-            <UnitInput type="number" placeholder="容量" inputMode="numeric" unit="ml" {...field('milkVolume')} />
-            <UnitInput type="number" placeholder="花費" inputMode="numeric" unit="元" {...field('milkPrice')} />
+          <div className="mb-2">
+            <div className="text-xs text-ink-dim mb-2">牛奶（選填）</div>
+            <div className="flex flex-col gap-2">
+              <input placeholder="品牌，例如：光泉全脂" className={inputClass} {...field('milkBrand')} />
+              <UnitInput type="number" placeholder="容量" inputMode="numeric" unit="ml" {...field('milkVolume')} />
+              <UnitInput type="number" placeholder="花費" inputMode="numeric" unit="元" {...field('milkPrice')} />
+            </div>
           </div>
         </div>
       </div>
