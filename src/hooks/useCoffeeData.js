@@ -17,6 +17,7 @@ function groupEntriesByDate(rows) {
     map[row.date_key].push({
       id: row.id,
       bean: row.bean,
+      roast: row.roast,
       art: row.art,
       note: row.note,
       photo: row.photo,
@@ -91,6 +92,7 @@ export function useCoffeeData(userId) {
         user_id: userId,
         date_key: dateKey,
         bean: data.bean,
+        roast: data.roast,
         art: data.art,
         note: data.note,
         photo: data.photo,
@@ -107,6 +109,7 @@ export function useCoffeeData(userId) {
       list.push({
         id: row.id,
         bean: row.bean,
+        roast: row.roast,
         art: row.art,
         note: row.note,
         photo: row.photo,
@@ -122,7 +125,14 @@ export function useCoffeeData(userId) {
     if (!existing) return null
     const { error } = await supabase
       .from('entries')
-      .update({ bean: data.bean, art: data.art, note: data.note, photo: data.photo, photo_position: data.photoPosition })
+      .update({
+        bean: data.bean,
+        roast: data.roast,
+        art: data.art,
+        note: data.note,
+        photo: data.photo,
+        photo_position: data.photoPosition,
+      })
       .eq('id', existing.id)
     if (error) {
       console.error(error)

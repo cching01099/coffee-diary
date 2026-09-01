@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import OptionGrid from './OptionGrid'
 import PhotoDrop from './PhotoDrop'
+import RoastSlider from './RoastSlider'
 
 function parsePosition(str) {
   if (!str) return { x: 50, y: 50 }
   const [x, y] = str.split(' ').map((v) => parseFloat(v))
   return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 50 }
 }
+
+const ROAST_OPTIONS = ['淺焙', '淺中焙', '中焙', '中深焙', '深焙']
 
 export default function AddCupSheet({
   isOpen,
@@ -21,6 +24,7 @@ export default function AddCupSheet({
   onDelete,
 }) {
   const [bean, setBean] = useState('')
+  const [roast, setRoast] = useState(ROAST_OPTIONS[2])
   const [art, setArt] = useState('')
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState(null)
@@ -32,12 +36,14 @@ export default function AddCupSheet({
     if (!isOpen) return
     if (editEntry) {
       setBean(editEntry.bean)
+      setRoast(editEntry.roast || ROAST_OPTIONS[2])
       setArt(editEntry.art)
       setNote(editEntry.note || '')
       setPhoto(editEntry.photo || null)
       setPhotoPosition(parsePosition(editEntry.photoPosition))
     } else {
       setBean('')
+      setRoast(ROAST_OPTIONS[2])
       setArt('')
       setNote('')
       setPhoto(null)
@@ -60,6 +66,7 @@ export default function AddCupSheet({
     setSaving(true)
     await onSubmit({
       bean: bean || '未命名豆子',
+      roast: roast || ROAST_OPTIONS[2],
       art: art || '其他',
       note,
       photo,
@@ -128,6 +135,11 @@ export default function AddCupSheet({
           </div>
 
           <div className="mb-5">
+            <div className="text-xs text-ink-dim mb-2">咖啡豆烘焙程度</div>
+            <RoastSlider options={ROAST_OPTIONS} value={roast} onChange={setRoast} />
+          </div>
+
+          <div className="mb-5">
             <div className="text-xs text-ink-dim mb-2">拉花圖案</div>
             <OptionGrid options={artOptions} value={art} onChange={setArt} onAddOption={onAddArtOption} />
           </div>
@@ -138,7 +150,7 @@ export default function AddCupSheet({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="奶泡打太粗了..."
-              className="w-full min-h-[50px] bg-card border border-line rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-ink-dim resize-y"
+              className="w-full min-h-[50px] bg-card border border-line rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-ink-dim/50 resize-y"
             />
           </div>
         </div>

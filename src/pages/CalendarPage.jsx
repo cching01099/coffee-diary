@@ -164,7 +164,9 @@ export default function CalendarPage({ data }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-[14.5px]">{e.bean}</div>
-              <div className="text-[11px] text-ink-dim mt-0.5">{e.art}</div>
+              <div className="text-[11px] text-ink-dim mt-0.5">
+                {e.roast ? `${e.roast} · ${e.art}` : e.art}
+              </div>
             </div>
           </div>
         ))

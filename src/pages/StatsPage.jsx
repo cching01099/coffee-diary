@@ -37,6 +37,7 @@ export default function StatsPage({ data }) {
   const [period, setPeriod] = useState('month')
   const [anchor, setAnchor] = useState(new Date())
   const [beanOpen, setBeanOpen] = useState(false)
+  const [roastOpen, setRoastOpen] = useState(false)
   const [artOpen, setArtOpen] = useState(false)
 
   function changePeriod(p) {
@@ -51,9 +52,10 @@ export default function StatsPage({ data }) {
     setAnchor(d)
   }
 
-  const { cups, avgPerDay, beanCount, artCount, photos } = useMemo(() => {
+  const { cups, avgPerDay, beanCount, roastCount, artCount, photos } = useMemo(() => {
     let cups = 0
     const beanCount = {}
+    const roastCount = {}
     const artCount = {}
     const photos = []
     Object.keys(entries).forEach((key) => {
@@ -61,12 +63,13 @@ export default function StatsPage({ data }) {
       entries[key].forEach((e) => {
         cups++
         beanCount[e.bean] = (beanCount[e.bean] || 0) + 1
+        if (e.roast) roastCount[e.roast] = (roastCount[e.roast] || 0) + 1
         artCount[e.art] = (artCount[e.art] || 0) + 1
         if (e.photo) photos.push({ src: e.photo, position: e.photoPosition })
       })
     })
     const avgPerDay = cups / periodDayCount(period, anchor)
-    return { cups, avgPerDay, beanCount, artCount, photos }
+    return { cups, avgPerDay, beanCount, roastCount, artCount, photos }
   }, [entries, period, anchor])
 
   const cupsLabel = period === 'week' ? '本週杯數' : period === 'year' ? '本年杯數' : '本月杯數'
@@ -116,12 +119,13 @@ export default function StatsPage({ data }) {
         </div>
         <div className="bg-card rounded-2xl border border-line p-4">
           <div className="text-xs text-ink-dim mb-1.5">平均每天</div>
-          <div className="text-[22px] font-bold text-accent">{avgPerDay.toFixed(1)}<span className="text-[13px] text-ink-dim">杯</span></div>
+          <div className="text-[22px] font-bold text-accent">{avgPerDay.toFixed(1)}<span className="text-[13px] text-ink-dim ml-1">杯</span></div>
         </div>
       </div>
 
       <div className="flex flex-col gap-2.5">
         <RankCard label="最愛咖啡豆品牌" countMap={beanCount} open={beanOpen} onToggle={() => setBeanOpen((v) => !v)} />
+        <RankCard label="最愛烘焙程度" countMap={roastCount} open={roastOpen} onToggle={() => setRoastOpen((v) => !v)} />
         <RankCard label="最常拉花圖案" countMap={artCount} open={artOpen} onToggle={() => setArtOpen((v) => !v)} />
       </div>
     </div>

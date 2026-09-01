@@ -5,6 +5,7 @@ create table public.entries (
   user_id uuid not null references auth.users(id) on delete cascade,
   date_key text not null,
   bean text,
+  roast text,
   art text,
   note text,
   photo text,
