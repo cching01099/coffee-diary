@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import App from '../App'
 import LoginPage from './LoginPage'
 
 export default function AuthGate() {
   const [session, setSession] = useState(undefined) // undefined = checking, null = signed out
+  const navigate = useNavigate()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -22,5 +24,10 @@ export default function AuthGate() {
     return <LoginPage />
   }
 
-  return <App user={session.user} onSignOut={() => supabase.auth.signOut()} />
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    navigate('/')
+  }
+
+  return <App user={session.user} onSignOut={handleSignOut} />
 }
