@@ -7,14 +7,12 @@ export default function LoginPromptModal({ onClose }) {
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm bg-card rounded-2xl p-6 border border-line"
+        className="relative w-full max-w-sm bg-card rounded-2xl p-8 border border-line"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-start mb-1">
-          <h2 className="text-lg font-semibold text-ink">☕ 登入保存紀錄</h2>
-          <button onClick={onClose} className="text-ink-dim text-sm px-1">✕</button>
-        </div>
-        <p className="text-sm text-ink-dim mb-5">目前顯示為範例資料，登入即可擁有專屬咖啡日記。</p>
+        <button onClick={onClose} className="absolute top-4 right-4 text-ink-dim text-sm">✕</button>
+        <h2 className="text-lg font-semibold text-ink mb-1 pr-6">☕ 開啟屬於你的咖啡之旅</h2>
+        <p className="text-sm text-ink-dim mb-5">目前顯示為範例資料，登入即可擁有專屬咖啡日記</p>
         <LoginForm />
       </div>
     </div>
