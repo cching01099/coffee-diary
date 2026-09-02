@@ -1,20 +1,23 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useCoffeeData } from './hooks/useCoffeeData'
 import BottomTabBar from './components/BottomTabBar'
-import AccountMenu from './components/AccountMenu'
 import CalendarPage from './pages/CalendarPage'
 import PurchasesPage from './pages/PurchasesPage'
 import StatsPage from './pages/StatsPage'
 
-export default function App({ user, onSignOut }) {
-  const data = useCoffeeData(user.id)
-
+export default function App({ data, headerRight, badge }) {
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line">
         <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">☕ 咖啡日記</h1>
-          <AccountMenu email={user.email} onSignOut={onSignOut} />
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold">☕ 咖啡日記</h1>
+            {badge && (
+              <span className="text-[10px] text-ink-dim border border-line rounded-full px-2 py-0.5">
+                {badge}
+              </span>
+            )}
+          </div>
+          {headerRight}
         </div>
       </div>
 

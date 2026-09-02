@@ -73,6 +73,7 @@ export default function StatsPage({ data }) {
   }, [entries, period, anchor])
 
   const cupsLabel = period === 'week' ? '本週杯數' : period === 'year' ? '本年杯數' : '本月杯數'
+  const photosLabel = period === 'week' ? '本週照片' : period === 'year' ? '本年照片' : '本月照片'
 
   return (
     <div>
@@ -98,18 +99,21 @@ export default function StatsPage({ data }) {
         <button onClick={() => changeNav(1)} className="w-7 h-7 rounded-lg border border-line">›</button>
       </div>
 
-      <div className="bg-card rounded-2xl border border-line p-3.5 grid grid-cols-8 gap-1.5 mb-4">
-        {photos.length === 0 ? (
-          <div className="col-span-8 text-center py-4 text-ink-dim text-sm">這段期間還沒有拍照的記錄</div>
-        ) : (
-          photos.map((p, i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-md bg-cover"
-              style={{ backgroundImage: `url('${p.src}')`, backgroundPosition: p.position || '50% 50%' }}
-            />
-          ))
-        )}
+      <div className="bg-card rounded-2xl border border-line p-3.5 mb-4">
+        <div className="text-xs text-ink-dim mb-2">{photosLabel}</div>
+        <div className="grid grid-cols-8 gap-1.5">
+          {photos.length === 0 ? (
+            <div className="col-span-8 text-center py-4 text-ink-dim text-sm">這段期間還沒有拍照的記錄</div>
+          ) : (
+            photos.map((p, i) => (
+              <div
+                key={i}
+                className="aspect-square rounded-md bg-cover"
+                style={{ backgroundImage: `url('${p.src}')`, backgroundPosition: p.position || '50% 50%' }}
+              />
+            ))
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 mb-2.5">

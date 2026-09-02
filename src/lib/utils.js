@@ -48,3 +48,21 @@ export function periodLabelText(period, anchor) {
 
 export const CAFFEINE_DOSE_G = 18
 export const CAFFEINE_MG_PER_G = 10
+
+const AUTH_ERROR_MESSAGES = {
+  'Invalid login credentials': '帳號或密碼錯誤，或此信箱尚未註冊過',
+  'Email not confirmed': '信箱尚未完成驗證，請查看收件匣並點擊驗證連結',
+  'User already registered': '此信箱已註冊，請直接登入',
+  'Password should be at least 6 characters': '密碼至少需要 6 個字元',
+  'Unable to validate email address: invalid format': '請輸入正確格式的 Email',
+  'signup requires a valid password': '請輸入密碼',
+}
+
+export function translateAuthError(message) {
+  if (!message) return message
+  if (AUTH_ERROR_MESSAGES[message]) return AUTH_ERROR_MESSAGES[message]
+  if (/security purposes.*only request this/i.test(message)) {
+    return '操作過於頻繁，請稍後再試一次'
+  }
+  return message
+}

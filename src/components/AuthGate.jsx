@@ -1,8 +1,39 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useCoffeeData } from '../hooks/useCoffeeData'
+import { useGuestCoffeeData } from '../hooks/useGuestCoffeeData'
 import App from '../App'
-import LoginPage from './LoginPage'
+import AccountMenu from './AccountMenu'
+import LoginPromptModal from './LoginPromptModal'
+
+function AuthenticatedShell({ user, onSignOut }) {
+  const data = useCoffeeData(user.id)
+  return <App data={data} headerRight={<AccountMenu email={user.email} onSignOut={onSignOut} />} />
+}
+
+function GuestShell() {
+  const [promptOpen, setPromptOpen] = useState(false)
+  const data = useGuestCoffeeData(() => setPromptOpen(true))
+
+  return (
+    <>
+      <App
+        data={data}
+        badge="體驗版"
+        headerRight={
+          <button
+            onClick={() => setPromptOpen(true)}
+            className="px-3.5 py-1.5 rounded-full border border-accent text-accent text-sm font-semibold"
+          >
+            登入
+          </button>
+        }
+      />
+      {promptOpen && <LoginPromptModal onClose={() => setPromptOpen(false)} />}
+    </>
+  )
+}
 
 export default function AuthGate() {
   const [session, setSession] = useState(undefined) // undefined = checking, null = signed out
@@ -21,7 +52,7 @@ export default function AuthGate() {
   }
 
   if (!session) {
-    return <LoginPage />
+    return <GuestShell />
   }
 
   async function handleSignOut() {
@@ -29,5 +60,5 @@ export default function AuthGate() {
     navigate('/')
   }
 
-  return <App user={session.user} onSignOut={handleSignOut} />
+  return <AuthenticatedShell user={session.user} onSignOut={handleSignOut} />
 }
