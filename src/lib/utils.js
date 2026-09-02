@@ -56,6 +56,7 @@ const AUTH_ERROR_MESSAGES = {
   'Password should be at least 6 characters': '密碼至少需要 6 個字元',
   'Unable to validate email address: invalid format': '請輸入正確格式的 Email',
   'signup requires a valid password': '請輸入密碼',
+  'Email rate limit exceeded': '驗證信寄送次數已達上限，請稍後（約一小時後）再試',
 }
 
 export function translateAuthError(message) {
