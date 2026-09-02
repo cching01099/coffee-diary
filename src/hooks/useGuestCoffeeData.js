@@ -93,12 +93,18 @@ export function useGuestCoffeeData(onRequireLogin) {
     onRequireLogin()
   }
 
+  function loadPurchases() {
+    // guest purchases are already loaded synchronously — nothing to fetch
+  }
+
   return {
     entries,
     purchases,
     beanOptions,
     artOptions,
     loading: false,
+    purchasesLoading: false,
+    loadPurchases,
     addLog,
     updateLog,
     deleteLog,

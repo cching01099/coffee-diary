@@ -27,6 +27,23 @@ function groupEntriesByDate(rows) {
   return map
 }
 
+// Uploads a freshly-picked local photo (a base64 data URL) to Storage and
+// returns its public URL. A photo that's already a URL (unchanged from an
+// earlier save) or null is passed through untouched — no re-upload.
+async function uploadPhotoIfNeeded(photo, userId) {
+  if (!photo || !photo.startsWith('data:')) return { url: photo, error: null }
+  try {
+    const blob = await (await fetch(photo)).blob()
+    const path = `${userId}/${crypto.randomUUID()}.jpg`
+    const { error } = await supabase.storage.from('coffee-photos').upload(path, blob, { contentType: 'image/jpeg' })
+    if (error) return { url: null, error }
+    const { data } = supabase.storage.from('coffee-photos').getPublicUrl(path)
+    return { url: data.publicUrl, error: null }
+  } catch (err) {
+    return { url: null, error: err }
+  }
+}
+
 function mapPurchaseRow(r) {
   return {
     id: r.id,
@@ -45,28 +62,38 @@ export function useCoffeeData(userId) {
   const [purchases, setPurchases] = useState([])
   const [beanOptions, setBeanOptions] = useState(DEFAULT_BEAN_OPTIONS)
   const [artOptions, setArtOptions] = useState(DEFAULT_ART_OPTIONS)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true) // entries + options only — purchases loads on demand
+  const [purchasesLoading, setPurchasesLoading] = useState(true)
   const optionsLoaded = useRef(false)
+  const purchasesLoaded = useRef(false)
 
   useEffect(() => {
     if (!userId) return
     let cancelled = false
     optionsLoaded.current = false
+    purchasesLoaded.current = false
+    setPurchasesLoading(true)
 
     async function load() {
       setLoading(true)
-      const [{ data: entryRows }, { data: purchaseRows }, { data: options }] = await Promise.all([
-        supabase.from('entries').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('purchases').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
-        supabase.from('user_options').select('*').eq('user_id', userId).maybeSingle(),
-      ])
-      if (cancelled) return
-      setEntries(groupEntriesByDate(entryRows || []))
-      setPurchases((purchaseRows || []).map(mapPurchaseRow))
-      setBeanOptions(options?.bean_options?.length ? options.bean_options : DEFAULT_BEAN_OPTIONS)
-      setArtOptions(options?.art_options?.length ? options.art_options : DEFAULT_ART_OPTIONS)
-      setLoading(false)
-      optionsLoaded.current = true
+      try {
+        const [entryResult, optionsResult] = await Promise.all([
+          supabase.from('entries').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+          supabase.from('user_options').select('*').eq('user_id', userId).maybeSingle(),
+        ])
+        if (cancelled) return
+        if (entryResult.error) console.error(entryResult.error)
+        if (optionsResult.error) console.error(optionsResult.error)
+        setEntries(groupEntriesByDate(entryResult.data || []))
+        const options = optionsResult.data
+        setBeanOptions(options?.bean_options?.length ? options.bean_options : DEFAULT_BEAN_OPTIONS)
+        setArtOptions(options?.art_options?.length ? options.art_options : DEFAULT_ART_OPTIONS)
+        optionsLoaded.current = true
+      } catch (err) {
+        console.error(err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
 
     load()
@@ -74,6 +101,32 @@ export function useCoffeeData(userId) {
       cancelled = true
     }
   }, [userId])
+
+  // Purchases page calls this on mount — no need to fetch it before the
+  // calendar (the default landing page) can render.
+  async function loadPurchases() {
+    if (purchasesLoaded.current || !userId) return
+    purchasesLoaded.current = true
+    setPurchasesLoading(true)
+    try {
+      const { data: purchaseRows, error } = await supabase
+        .from('purchases')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+      if (error) {
+        console.error(error)
+        purchasesLoaded.current = false
+        return
+      }
+      setPurchases((purchaseRows || []).map(mapPurchaseRow))
+    } catch (err) {
+      console.error(err)
+      purchasesLoaded.current = false
+    } finally {
+      setPurchasesLoading(false)
+    }
+  }
 
   // persist option-chip changes, but not the initial load that populated them
   useEffect(() => {
@@ -86,6 +139,11 @@ export function useCoffeeData(userId) {
   }, [beanOptions, artOptions, userId])
 
   async function addLog(dateKey, data) {
+    const { url: photoUrl, error: uploadError } = await uploadPhotoIfNeeded(data.photo, userId)
+    if (uploadError) {
+      console.error(uploadError)
+      return uploadError
+    }
     const { data: row, error } = await supabase
       .from('entries')
       .insert({
@@ -95,7 +153,7 @@ export function useCoffeeData(userId) {
         roast: data.roast,
         art: data.art,
         note: data.note,
-        photo: data.photo,
+        photo: photoUrl,
         photo_position: data.photoPosition,
       })
       .select()
@@ -123,6 +181,11 @@ export function useCoffeeData(userId) {
   async function updateLog(dateKey, idx, data) {
     const existing = entries[dateKey]?.[idx]
     if (!existing) return null
+    const { url: photoUrl, error: uploadError } = await uploadPhotoIfNeeded(data.photo, userId)
+    if (uploadError) {
+      console.error(uploadError)
+      return uploadError
+    }
     const { error } = await supabase
       .from('entries')
       .update({
@@ -130,7 +193,7 @@ export function useCoffeeData(userId) {
         roast: data.roast,
         art: data.art,
         note: data.note,
-        photo: data.photo,
+        photo: photoUrl,
         photo_position: data.photoPosition,
       })
       .eq('id', existing.id)
@@ -140,7 +203,7 @@ export function useCoffeeData(userId) {
     }
     setEntries((prev) => {
       const list = [...(prev[dateKey] || [])]
-      list[idx] = { ...data, id: existing.id }
+      list[idx] = { ...data, photo: photoUrl, id: existing.id }
       return { ...prev, [dateKey]: list }
     })
     return null
@@ -241,6 +304,8 @@ export function useCoffeeData(userId) {
     beanOptions,
     artOptions,
     loading,
+    purchasesLoading,
+    loadPurchases,
     addLog,
     updateLog,
     deleteLog,

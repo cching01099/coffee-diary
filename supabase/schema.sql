@@ -67,3 +67,16 @@ $$ language plpgsql security definer set search_path = public;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Storage: coffee-photos bucket, path format is "<user_id>/<filename>"
+create policy "users can upload their own coffee photos"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'coffee-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "users can update their own coffee photos"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'coffee-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "users can delete their own coffee photos"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'coffee-photos' and (storage.foldername(name))[1] = auth.uid()::text);

@@ -49,6 +49,32 @@ export function periodLabelText(period, anchor) {
 export const CAFFEINE_DOSE_G = 18
 export const CAFFEINE_MG_PER_G = 10
 
+// Photos are only ever shown as small squares in this app, so there's no
+// reason to store a phone camera's full-resolution original — resize it
+// down before it ever gets base64-encoded into the database.
+export function compressImage(file, { maxDimension = 1280, quality = 0.8 } = {}) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      const scale = Math.min(1, maxDimension / Math.max(img.width, img.height))
+      const w = Math.round(img.width * scale)
+      const h = Math.round(img.height * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('圖片讀取失敗'))
+    }
+    img.src = objectUrl
+  })
+}
+
 const AUTH_ERROR_MESSAGES = {
   'Invalid login credentials': '帳號或密碼錯誤，或此信箱尚未註冊過',
   'Email not confirmed': '信箱尚未完成驗證，請查看收件匣並點擊驗證連結',

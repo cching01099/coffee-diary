@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { dateInPeriod, periodLabelText, fmtNum } from '../lib/utils'
 import AddPurchaseSheet from '../components/AddPurchaseSheet'
 
@@ -9,7 +9,13 @@ const periodLabels = {
 }
 
 export default function PurchasesPage({ data }) {
-  const { purchases, addPurchase, updatePurchase, deletePurchase } = data
+  const { purchases, purchasesLoading, loadPurchases, addPurchase, updatePurchase, deletePurchase } = data
+
+  // Purchases aren't fetched until this page is actually visited.
+  useEffect(() => {
+    loadPurchases()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [period, setPeriod] = useState('month')
   const [anchor, setAnchor] = useState(new Date())
@@ -111,7 +117,9 @@ export default function PurchasesPage({ data }) {
       </button>
 
       <div className="text-lg font-medium mb-3">購買記錄</div>
-      {filtered.length === 0 ? (
+      {purchasesLoading ? (
+        <div className="text-center py-6 text-ink-dim text-sm">載入中...</div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-6 text-ink-dim text-sm">這段期間還沒有購買記錄</div>
       ) : (
         filtered.map((p) => {

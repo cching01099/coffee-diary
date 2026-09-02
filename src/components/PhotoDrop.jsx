@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { compressImage } from '../lib/utils'
 
 function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v))
@@ -9,13 +10,21 @@ export default function PhotoDrop({ photo, onChange, position = { x: 50, y: 50 }
   const containerRef = useRef(null)
   const dragState = useRef(null)
   const [dragging, setDragging] = useState(false)
+  const [compressing, setCompressing] = useState(false)
 
-  function handleFile(e) {
+  async function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => onChange(ev.target.result)
-    reader.readAsDataURL(file)
+    setCompressing(true)
+    try {
+      onChange(await compressImage(file))
+    } catch (err) {
+      console.error(err)
+      alert('照片處理失敗，請換一張試試')
+    } finally {
+      setCompressing(false)
+      e.target.value = ''
+    }
   }
 
   function handleRemove(e) {
@@ -71,11 +80,11 @@ export default function PhotoDrop({ photo, onChange, position = { x: 50, y: 50 }
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={{ touchAction: 'none' }}
-      className={`relative w-full aspect-[1.6] rounded-xl border border-dashed border-line flex items-center justify-center overflow-hidden text-ink-dim text-sm mb-5 select-none ${
+      className={`relative w-full aspect-square rounded-xl border border-dashed border-line flex items-center justify-center overflow-hidden text-ink-dim text-sm mb-5 select-none ${
         photo ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'
       }`}
     >
-      {!photo && <span>拍照或選擇相簿 📷</span>}
+      {!photo && <span>{compressing ? '照片處理中...' : '拍照或選擇相簿 📷'}</span>}
       {photo && (
         <>
           <img

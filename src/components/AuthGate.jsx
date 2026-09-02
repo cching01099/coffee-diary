@@ -47,12 +47,28 @@ export default function AuthGate() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
+  // Google OAuth redirects back with the session in a URL hash; once
+  // Supabase has parsed it, strip any leftover fragment (e.g. a bare "#").
+  useEffect(() => {
+    if (session && window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [session])
+
   if (session === undefined) {
-    return <div className="min-h-screen bg-bg flex items-center justify-center text-ink-dim text-sm">載入中...</div>
+    return (
+      <div key="checking" className="fade-in min-h-screen bg-bg flex items-center justify-center text-ink-dim text-sm">
+        載入中...
+      </div>
+    )
   }
 
   if (!session) {
-    return <GuestShell />
+    return (
+      <div key="guest" className="fade-in">
+        <GuestShell />
+      </div>
+    )
   }
 
   async function handleSignOut() {
@@ -60,5 +76,9 @@ export default function AuthGate() {
     navigate('/')
   }
 
-  return <AuthenticatedShell user={session.user} onSignOut={handleSignOut} />
+  return (
+    <div key="authenticated" className="fade-in">
+      <AuthenticatedShell user={session.user} onSignOut={handleSignOut} />
+    </div>
+  )
 }
