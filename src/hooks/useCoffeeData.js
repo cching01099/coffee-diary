@@ -189,9 +189,11 @@ export function useCoffeeData(userId) {
       console.error(uploadError)
       return uploadError
     }
+    const newDateKey = data.dateKey || dateKey
     const { error } = await supabase
       .from('entries')
       .update({
+        date_key: newDateKey,
         bean: data.bean,
         roast: data.roast,
         art: data.art,
@@ -206,9 +208,27 @@ export function useCoffeeData(userId) {
       return error
     }
     setEntries((prev) => {
-      const list = [...(prev[dateKey] || [])]
-      list[idx] = { ...data, photo: photoUrl, id: existing.id }
-      return { ...prev, [dateKey]: list }
+      const updated = {
+        id: existing.id,
+        bean: data.bean,
+        roast: data.roast,
+        art: data.art,
+        note: data.note,
+        photo: photoUrl,
+        photoPosition: data.photoPosition,
+        photoZoom: data.photoZoom,
+      }
+      if (newDateKey === dateKey) {
+        const list = [...(prev[dateKey] || [])]
+        list[idx] = updated
+        return { ...prev, [dateKey]: list }
+      }
+      const oldList = [...(prev[dateKey] || [])]
+      oldList.splice(idx, 1)
+      const next = { ...prev, [newDateKey]: [...(prev[newDateKey] || []), updated] }
+      if (oldList.length === 0) delete next[dateKey]
+      else next[dateKey] = oldList
+      return next
     })
     return null
   }

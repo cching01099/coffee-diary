@@ -24,6 +24,7 @@ export default function AddCupSheet({
   onDelete,
 }) {
   const [bean, setBean] = useState('')
+  const [dateValue, setDateValue] = useState(dateKey)
   const [isCoffee, setIsCoffee] = useState(true)
   const [roast, setRoast] = useState(ROAST_OPTIONS[2])
   const [art, setArt] = useState('')
@@ -36,6 +37,7 @@ export default function AddCupSheet({
 
   useEffect(() => {
     if (!isOpen) return
+    setDateValue(dateKey)
     if (editEntry) {
       setBean(editEntry.bean)
       setIsCoffee(editEntry.roast != null)
@@ -55,7 +57,7 @@ export default function AddCupSheet({
       setPhotoPosition({ x: 50, y: 50 })
       setPhotoZoom(1)
     }
-  }, [isOpen, editEntry])
+  }, [isOpen, editEntry, dateKey])
 
   if (!isOpen) return null
 
@@ -74,6 +76,7 @@ export default function AddCupSheet({
   async function handleSubmit() {
     setSaving(true)
     await onSubmit({
+      dateKey: dateValue,
       bean: bean || '未命名豆子',
       roast: isCoffee ? roast || ROAST_OPTIONS[2] : null,
       art: art || '其他',
@@ -136,9 +139,18 @@ export default function AddCupSheet({
 
           <div className="mb-5">
             <div className="text-xs text-ink-dim mb-2">日期</div>
-            <div className="flex items-center gap-2 text-[15px] font-medium">
-              <span>{dateLabel}</span>
-            </div>
+            {editEntry ? (
+              <input
+                type="date"
+                value={dateValue}
+                onChange={(e) => setDateValue(e.target.value)}
+                className="w-full bg-card border border-line rounded-lg px-3 py-2.5 text-[15px] font-medium text-ink appearance-none"
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-[15px] font-medium">
+                <span>{dateLabel}</span>
+              </div>
+            )}
           </div>
 
           <div className="mb-5">
