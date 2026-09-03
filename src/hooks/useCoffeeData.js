@@ -22,6 +22,7 @@ function groupEntriesByDate(rows) {
       note: row.note,
       photo: row.photo,
       photoPosition: row.photo_position,
+      photoZoom: row.photo_zoom,
     })
   }
   return map
@@ -155,6 +156,7 @@ export function useCoffeeData(userId) {
         note: data.note,
         photo: photoUrl,
         photo_position: data.photoPosition,
+        photo_zoom: data.photoZoom,
       })
       .select()
       .single()
@@ -172,6 +174,7 @@ export function useCoffeeData(userId) {
         note: row.note,
         photo: row.photo,
         photoPosition: row.photo_position,
+        photoZoom: row.photo_zoom,
       })
       return { ...prev, [dateKey]: list }
     })
@@ -195,6 +198,7 @@ export function useCoffeeData(userId) {
         note: data.note,
         photo: photoUrl,
         photo_position: data.photoPosition,
+        photo_zoom: data.photoZoom,
       })
       .eq('id', existing.id)
     if (error) {

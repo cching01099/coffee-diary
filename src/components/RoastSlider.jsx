@@ -26,7 +26,21 @@ export default function RoastSlider({ options, value, onChange }) {
     updateFromClientX(e.clientX)
   }
 
-  function handlePointerUp() {
+  function releaseCapture(e) {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // no-op — capture may already be released
+    }
+  }
+
+  function handlePointerUp(e) {
+    releaseCapture(e)
+    draggingRef.current = false
+  }
+
+  function handlePointerCancel(e) {
+    releaseCapture(e)
     draggingRef.current = false
   }
 
@@ -37,6 +51,7 @@ export default function RoastSlider({ options, value, onChange }) {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         style={{ touchAction: 'none', background: 'linear-gradient(to right, #EFE3D3, #5C3826)' }}
         className="relative h-2 rounded-full cursor-pointer select-none"
       >

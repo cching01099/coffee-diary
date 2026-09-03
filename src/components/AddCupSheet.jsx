@@ -29,6 +29,7 @@ export default function AddCupSheet({
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState(null)
   const [photoPosition, setPhotoPosition] = useState({ x: 50, y: 50 })
+  const [photoZoom, setPhotoZoom] = useState(1)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -41,6 +42,7 @@ export default function AddCupSheet({
       setNote(editEntry.note || '')
       setPhoto(editEntry.photo || null)
       setPhotoPosition(parsePosition(editEntry.photoPosition))
+      setPhotoZoom(editEntry.photoZoom || 1)
     } else {
       setBean('')
       setRoast(ROAST_OPTIONS[2])
@@ -48,6 +50,7 @@ export default function AddCupSheet({
       setNote('')
       setPhoto(null)
       setPhotoPosition({ x: 50, y: 50 })
+      setPhotoZoom(1)
     }
   }, [isOpen, editEntry])
 
@@ -59,7 +62,10 @@ export default function AddCupSheet({
 
   function handlePhotoChange(next) {
     setPhoto(next)
-    if (!next) setPhotoPosition({ x: 50, y: 50 })
+    if (!next) {
+      setPhotoPosition({ x: 50, y: 50 })
+      setPhotoZoom(1)
+    }
   }
 
   async function handleSubmit() {
@@ -71,6 +77,7 @@ export default function AddCupSheet({
       note,
       photo,
       photoPosition: photo ? `${photoPosition.x}% ${photoPosition.y}%` : null,
+      photoZoom: photo ? photoZoom : null,
     })
     setSaving(false)
   }
@@ -108,6 +115,8 @@ export default function AddCupSheet({
             onChange={handlePhotoChange}
             position={photoPosition}
             onPositionChange={setPhotoPosition}
+            zoom={photoZoom}
+            onZoomChange={setPhotoZoom}
           />
 
           {editEntry && (

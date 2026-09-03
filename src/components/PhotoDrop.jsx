@@ -5,7 +5,14 @@ function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v))
 }
 
-export default function PhotoDrop({ photo, onChange, position = { x: 50, y: 50 }, onPositionChange }) {
+export default function PhotoDrop({
+  photo,
+  onChange,
+  position = { x: 50, y: 50 },
+  onPositionChange,
+  zoom = 1,
+  onZoomChange,
+}) {
   const inputRef = useRef(null)
   const containerRef = useRef(null)
   const dragState = useRef(null)
@@ -62,7 +69,16 @@ export default function PhotoDrop({ photo, onChange, position = { x: 50, y: 50 }
     })
   }
 
-  function handlePointerUp() {
+  function releaseCapture(e) {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      // no-op — capture may already be released
+    }
+  }
+
+  function handlePointerUp(e) {
+    releaseCapture(e)
     if (!dragState.current) {
       if (!photo) inputRef.current?.click()
       return
@@ -73,40 +89,69 @@ export default function PhotoDrop({ photo, onChange, position = { x: 50, y: 50 }
     if (!moved) inputRef.current?.click()
   }
 
+  function handlePointerCancel(e) {
+    releaseCapture(e)
+    dragState.current = null
+    setDragging(false)
+  }
+
   return (
-    <div
-      ref={containerRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      style={{ touchAction: 'none' }}
-      className={`relative w-full aspect-square rounded-xl border border-dashed border-line flex items-center justify-center overflow-hidden text-ink-dim text-sm mb-5 select-none ${
-        photo ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'
-      }`}
-    >
-      {!photo && <span>{compressing ? '照片處理中...' : '拍照或選擇相簿 📷'}</span>}
-      {photo && (
-        <>
-          <img
-            src={photo}
-            alt=""
-            draggable={false}
-            className="w-full h-full object-cover pointer-events-none"
-            style={{ objectPosition: `${position.x}% ${position.y}%` }}
+    <div className="mb-5">
+      <div
+        ref={containerRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        style={{ touchAction: 'none' }}
+        className={`relative w-full aspect-square rounded-xl border border-dashed border-line flex items-center justify-center overflow-hidden text-ink-dim text-sm select-none ${
+          photo ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-pointer'
+        }`}
+      >
+        {!photo && <span>{compressing ? '照片處理中...' : '拍照或選擇相簿 📷'}</span>}
+        {photo && (
+          <>
+            <img
+              src={photo}
+              alt=""
+              draggable={false}
+              className="w-full h-full object-cover pointer-events-none"
+              style={{
+                objectPosition: `${position.x}% ${position.y}%`,
+                transform: `scale(${zoom})`,
+                transformOrigin: `${position.x}% ${position.y}%`,
+              }}
+            />
+            <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center bg-black/45 text-white text-[11.5px]">
+              拖曳調整位置・點擊更換照片
+            </div>
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-2 right-2 w-[26px] h-[26px] rounded-full bg-black/55 text-white flex items-center justify-center text-xs"
+            >
+              ✕
+            </button>
+          </>
+        )}
+        <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+      </div>
+
+      {photo && onZoomChange && (
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs text-ink-dim shrink-0">縮小</span>
+          <input
+            type="range"
+            min={1}
+            max={3}
+            step={0.05}
+            value={zoom}
+            onChange={(e) => onZoomChange(parseFloat(e.target.value))}
+            className="w-full accent-accent"
           />
-          <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center bg-black/45 text-white text-[11.5px]">
-            拖曳調整位置・點擊更換照片
-          </div>
-          <button
-            type="button"
-            onClick={handleRemove}
-            className="absolute top-2 right-2 w-[26px] h-[26px] rounded-full bg-black/55 text-white flex items-center justify-center text-xs"
-          >
-            ✕
-          </button>
-        </>
+          <span className="text-xs text-ink-dim shrink-0">放大</span>
+        </div>
       )}
-      <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
     </div>
   )
 }

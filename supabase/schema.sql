@@ -10,6 +10,7 @@ create table public.entries (
   note text,
   photo text,
   photo_position text,
+  photo_zoom numeric,
   created_at timestamptz not null default now()
 );
 create index entries_user_date_idx on public.entries (user_id, date_key);

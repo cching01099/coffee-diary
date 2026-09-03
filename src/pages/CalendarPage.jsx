@@ -103,11 +103,14 @@ export default function CalendarPage({ data }) {
               >
                 {hasEntry ? (
                   photoEntry ? (
-                    <div
-                      className="w-full h-full bg-cover rounded-lg"
+                    <img
+                      src={photoEntry.photo}
+                      alt=""
+                      className="w-full h-full object-cover rounded-lg"
                       style={{
-                        backgroundImage: `url('${photoEntry.photo}')`,
-                        backgroundPosition: photoEntry.photoPosition || '50% 50%',
+                        objectPosition: photoEntry.photoPosition || '50% 50%',
+                        transform: `scale(${photoEntry.photoZoom || 1})`,
+                        transformOrigin: photoEntry.photoPosition || '50% 50%',
                       }}
                     />
                   ) : (
@@ -152,15 +155,21 @@ export default function CalendarPage({ data }) {
             onClick={() => openEditSheet(idx)}
             className="flex items-center gap-3 bg-card rounded-2xl border border-line p-3 mb-2 cursor-pointer"
           >
-            <div
-              className="w-[46px] h-[46px] rounded-lg flex-shrink-0 flex items-center justify-center text-xl bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519] bg-cover"
-              style={
-                e.photo
-                  ? { backgroundImage: `url('${e.photo}')`, backgroundPosition: e.photoPosition || '50% 50%' }
-                  : {}
-              }
-            >
-              {!e.photo && '☕'}
+            <div className="relative w-[46px] h-[46px] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center text-xl bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519]">
+              {e.photo ? (
+                <img
+                  src={e.photo}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{
+                    objectPosition: e.photoPosition || '50% 50%',
+                    transform: `scale(${e.photoZoom || 1})`,
+                    transformOrigin: e.photoPosition || '50% 50%',
+                  }}
+                />
+              ) : (
+                '☕'
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-[14.5px]">{e.bean}</div>

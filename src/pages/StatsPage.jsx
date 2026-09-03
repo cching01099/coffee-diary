@@ -65,7 +65,7 @@ export default function StatsPage({ data }) {
         beanCount[e.bean] = (beanCount[e.bean] || 0) + 1
         if (e.roast) roastCount[e.roast] = (roastCount[e.roast] || 0) + 1
         artCount[e.art] = (artCount[e.art] || 0) + 1
-        if (e.photo) photos.push({ src: e.photo, position: e.photoPosition })
+        if (e.photo) photos.push({ src: e.photo, position: e.photoPosition, zoom: e.photoZoom })
       })
     })
     const avgPerDay = cups / periodDayCount(period, anchor)
@@ -106,11 +106,18 @@ export default function StatsPage({ data }) {
             <div className="col-span-8 text-center py-4 text-ink-dim text-sm">這段期間還沒有拍照的記錄</div>
           ) : (
             photos.map((p, i) => (
-              <div
-                key={i}
-                className="aspect-square rounded-md bg-cover"
-                style={{ backgroundImage: `url('${p.src}')`, backgroundPosition: p.position || '50% 50%' }}
-              />
+              <div key={i} className="relative aspect-square rounded-md overflow-hidden">
+                <img
+                  src={p.src}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{
+                    objectPosition: p.position || '50% 50%',
+                    transform: `scale(${p.zoom || 1})`,
+                    transformOrigin: p.position || '50% 50%',
+                  }}
+                />
+              </div>
             ))
           )}
         </div>
