@@ -49,7 +49,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88vh] overflow-y-auto pb-8">
+      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8">
         <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button
             onClick={onClose}

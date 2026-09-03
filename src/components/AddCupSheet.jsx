@@ -24,6 +24,7 @@ export default function AddCupSheet({
   onDelete,
 }) {
   const [bean, setBean] = useState('')
+  const [isCoffee, setIsCoffee] = useState(true)
   const [roast, setRoast] = useState(ROAST_OPTIONS[2])
   const [art, setArt] = useState('')
   const [note, setNote] = useState('')
@@ -37,6 +38,7 @@ export default function AddCupSheet({
     if (!isOpen) return
     if (editEntry) {
       setBean(editEntry.bean)
+      setIsCoffee(editEntry.roast != null)
       setRoast(editEntry.roast || ROAST_OPTIONS[2])
       setArt(editEntry.art)
       setNote(editEntry.note || '')
@@ -45,6 +47,7 @@ export default function AddCupSheet({
       setPhotoZoom(editEntry.photoZoom || 1)
     } else {
       setBean('')
+      setIsCoffee(true)
       setRoast(ROAST_OPTIONS[2])
       setArt('')
       setNote('')
@@ -72,7 +75,7 @@ export default function AddCupSheet({
     setSaving(true)
     await onSubmit({
       bean: bean || '未命名豆子',
-      roast: roast || ROAST_OPTIONS[2],
+      roast: isCoffee ? roast || ROAST_OPTIONS[2] : null,
       art: art || '其他',
       note,
       photo,
@@ -90,7 +93,7 @@ export default function AddCupSheet({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88vh] overflow-y-auto pb-8">
+      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8">
         <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button
             onClick={onClose}
@@ -144,8 +147,23 @@ export default function AddCupSheet({
           </div>
 
           <div className="mb-5">
-            <div className="text-xs text-ink-dim mb-2">咖啡豆烘焙程度</div>
-            <RoastSlider options={ROAST_OPTIONS} value={roast} onChange={setRoast} />
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-ink-dim">咖啡豆烘焙程度</div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isCoffee}
+                onClick={() => setIsCoffee((v) => !v)}
+                className={`relative w-7 h-4 rounded-full transition-colors ${isCoffee ? 'bg-accent' : 'bg-line'}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${
+                    isCoffee ? 'translate-x-3' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+            {isCoffee && <RoastSlider options={ROAST_OPTIONS} value={roast} onChange={setRoast} />}
           </div>
 
           <div className="mb-5">

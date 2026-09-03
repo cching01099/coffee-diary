@@ -3,29 +3,31 @@ import { dateInPeriod, periodDayCount, periodLabelText } from '../lib/utils'
 
 function RankCard({ label, countMap, open, onToggle }) {
   const sorted = useMemo(() => Object.entries(countMap).sort((a, b) => b[1] - a[1]), [countMap])
-  const topName = sorted.length ? sorted[0][0] : '—'
+  const hasData = sorted.length > 0
+  const topName = hasData ? sorted[0][0] : '—'
 
   return (
     <div className="bg-card rounded-2xl border border-line p-4">
-      <div onClick={onToggle} className="flex justify-between items-center cursor-pointer">
+      <div
+        onClick={hasData ? onToggle : undefined}
+        className={`flex justify-between items-center ${hasData ? 'cursor-pointer' : ''}`}
+      >
         <div>
           <div className="text-xs text-ink-dim">{label}</div>
           <div className="font-bold text-lg text-accent mt-1">{topName}</div>
         </div>
-        <span className={`text-ink-dim text-sm transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+        {hasData && (
+          <span className={`text-ink-dim text-sm transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+        )}
       </div>
-      {open && (
+      {hasData && open && (
         <div className="mt-3 pt-1 border-t border-line">
-          {sorted.length === 0 ? (
-            <div className="text-ink-dim text-sm py-2.5">這段期間還沒有記錄</div>
-          ) : (
-            sorted.map(([name, count]) => (
-              <div key={name} className="flex justify-between items-center py-2.5">
-                <div className="text-sm">{name}</div>
-                <div className="font-semibold text-sm text-accent">{count} 杯</div>
-              </div>
-            ))
-          )}
+          {sorted.map(([name, count]) => (
+            <div key={name} className="flex justify-between items-center py-2.5">
+              <div className="text-sm">{name}</div>
+              <div className="font-semibold text-sm text-accent">{count} 杯</div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -52,14 +54,19 @@ export default function StatsPage({ data }) {
     setAnchor(d)
   }
 
-  const { cups, avgPerDay, beanCount, roastCount, artCount, photos } = useMemo(() => {
+  const { cups, avgPerDay, beanCount, roastCount, artCount, photos, busiestDay } = useMemo(() => {
     let cups = 0
     const beanCount = {}
     const roastCount = {}
     const artCount = {}
     const photos = []
+    let busiestDay = null
     Object.keys(entries).forEach((key) => {
       if (!dateInPeriod(key, period, anchor)) return
+      const dayCount = entries[key].length
+      if (dayCount > 0 && (!busiestDay || dayCount > busiestDay.count)) {
+        busiestDay = { key, count: dayCount }
+      }
       entries[key].forEach((e) => {
         cups++
         beanCount[e.bean] = (beanCount[e.bean] || 0) + 1
@@ -69,11 +76,16 @@ export default function StatsPage({ data }) {
       })
     })
     const avgPerDay = cups / periodDayCount(period, anchor)
-    return { cups, avgPerDay, beanCount, roastCount, artCount, photos }
+    return { cups, avgPerDay, beanCount, roastCount, artCount, photos, busiestDay }
   }, [entries, period, anchor])
+
+  const busiestDayLabel = busiestDay
+    ? new Date(busiestDay.key).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
+    : null
 
   const cupsLabel = period === 'week' ? '本週杯數' : period === 'year' ? '本年杯數' : '本月杯數'
   const photosLabel = period === 'week' ? '本週照片' : period === 'year' ? '本年照片' : '本月照片'
+  const busiestLabel = period === 'week' ? '本週最多杯數' : period === 'year' ? '本年最多杯數' : '本月最多杯數'
 
   return (
     <div>
@@ -132,6 +144,18 @@ export default function StatsPage({ data }) {
           <div className="text-xs text-ink-dim mb-1.5">平均每天</div>
           <div className="text-[22px] font-bold text-accent">{avgPerDay.toFixed(1)}<span className="text-[13px] text-ink-dim ml-1">杯</span></div>
         </div>
+      </div>
+
+      <div className="bg-card rounded-2xl border border-line p-4 mb-2.5">
+        <div className="text-xs text-ink-dim mb-1.5">{busiestLabel}</div>
+        {busiestDay ? (
+          <div className="flex items-baseline justify-between">
+            <div className="text-[22px] font-bold text-accent">{busiestDay.count}<span className="text-[13px] text-ink-dim ml-1">杯</span></div>
+            <div className="text-ink-dim text-sm">{busiestDayLabel}</div>
+          </div>
+        ) : (
+          <div className="text-[22px] font-bold text-accent">—</div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2.5">
