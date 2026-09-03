@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fmtKey } from '../lib/utils'
 
-const blank = { beanBrand: '', beanWeight: '', beanPrice: '', milkBrand: '', milkVolume: '', milkPrice: '' }
+const blank = { date: '', beanBrand: '', beanWeight: '', beanPrice: '', milkBrand: '', milkVolume: '', milkPrice: '' }
 
 const inputClass = 'w-full bg-card border border-line rounded-lg px-3 py-2.5 text-sm text-ink placeholder:text-ink-dim'
 
@@ -83,7 +83,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
 
           <div className="mb-5">
             <div className="text-xs text-ink-dim mb-2">日期</div>
-            <input type="date" className={`${inputClass} text-[15px] font-medium`} {...field('date')} />
+            <input type="date" className={`${inputClass} text-[15px] font-medium appearance-none`} {...field('date')} />
           </div>
 
           <div className="mb-5">
