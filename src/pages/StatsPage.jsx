@@ -119,9 +119,12 @@ export default function StatsPage({ data }) {
           ) : (
             photos.map((p, i) => (
               <div key={i} className="relative aspect-square rounded-md overflow-hidden">
+                <div className="absolute inset-0 bg-line animate-pulse" />
                 <img
                   src={p.src}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="absolute inset-0 w-full h-full object-cover"
                   style={{
                     objectPosition: p.position || '50% 50%',

@@ -103,16 +103,21 @@ export default function CalendarPage({ data }) {
               >
                 {hasEntry ? (
                   photoEntry ? (
-                    <img
-                      src={photoEntry.photo}
-                      alt=""
-                      className="w-full h-full object-cover rounded-lg"
-                      style={{
-                        objectPosition: photoEntry.photoPosition || '50% 50%',
-                        transform: `scale(${photoEntry.photoZoom || 1})`,
-                        transformOrigin: photoEntry.photoPosition || '50% 50%',
-                      }}
-                    />
+                    <>
+                      <div className="absolute inset-0 bg-line animate-pulse" />
+                      <img
+                        src={photoEntry.photo}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        style={{
+                          objectPosition: photoEntry.photoPosition || '50% 50%',
+                          transform: `scale(${photoEntry.photoZoom || 1})`,
+                          transformOrigin: photoEntry.photoPosition || '50% 50%',
+                        }}
+                      />
+                    </>
                   ) : (
                     <div className="w-full h-full rounded-lg bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519] flex items-center justify-center">☕</div>
                   )
@@ -155,20 +160,25 @@ export default function CalendarPage({ data }) {
             onClick={() => openEditSheet(idx)}
             className="flex items-center gap-3 bg-card rounded-2xl border border-line p-3 mb-2 cursor-pointer"
           >
-            <div className="relative w-[46px] h-[46px] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center text-xl bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519]">
+            <div className="relative w-[46px] h-[46px] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center text-xl">
               {e.photo ? (
-                <img
-                  src={e.photo}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover"
-                  style={{
-                    objectPosition: e.photoPosition || '50% 50%',
-                    transform: `scale(${e.photoZoom || 1})`,
-                    transformOrigin: e.photoPosition || '50% 50%',
-                  }}
-                />
+                <>
+                  <div className="absolute inset-0 bg-line animate-pulse" />
+                  <img
+                    src={e.photo}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                      objectPosition: e.photoPosition || '50% 50%',
+                      transform: `scale(${e.photoZoom || 1})`,
+                      transformOrigin: e.photoPosition || '50% 50%',
+                    }}
+                  />
+                </>
               ) : (
-                '☕'
+                <div className="absolute inset-0 bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519] flex items-center justify-center">☕</div>
               )}
             </div>
             <div className="flex-1 min-w-0">
