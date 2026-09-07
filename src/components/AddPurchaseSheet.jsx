@@ -83,7 +83,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
 
           <div className="mb-5">
             <div className="text-xs text-ink-dim mb-2">日期</div>
-            <input type="date" className={`${inputClass} text-[15px] font-medium appearance-none`} {...field('date')} />
+            <input type="date" required className={`${inputClass} text-[15px] font-medium appearance-none`} {...field('date')} />
           </div>
 
           <div className="mb-5">

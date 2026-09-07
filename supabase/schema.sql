@@ -3,7 +3,7 @@
 create table public.entries (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  date_key text not null,
+  date_key date not null,
   bean text,
   roast text,
   art text,
@@ -18,7 +18,7 @@ create index entries_user_date_idx on public.entries (user_id, date_key);
 create table public.purchases (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  date_key text not null,
+  date_key date not null,
   bean_brand text,
   bean_weight numeric,
   bean_price numeric,

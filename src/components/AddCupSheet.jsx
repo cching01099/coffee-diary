@@ -142,6 +142,7 @@ export default function AddCupSheet({
             {editEntry ? (
               <input
                 type="date"
+                required
                 value={dateValue}
                 onChange={(e) => setDateValue(e.target.value)}
                 className="w-full bg-card border border-line rounded-lg px-3 py-2.5 text-[15px] font-medium text-ink appearance-none"
