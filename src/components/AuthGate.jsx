@@ -9,7 +9,14 @@ import LoginPromptModal from './LoginPromptModal'
 
 function AuthenticatedShell({ user, onSignOut }) {
   const data = useCoffeeData(user.id)
-  return <App data={data} headerRight={<AccountMenu email={user.email} onSignOut={onSignOut} />} />
+  const displayName = user.user_metadata?.full_name || user.email
+  const avatarUrl = user.user_metadata?.avatar_url
+  return (
+    <App
+      data={data}
+      headerRight={<AccountMenu displayName={displayName} avatarUrl={avatarUrl} onSignOut={onSignOut} />}
+    />
+  )
 }
 
 function GuestShell() {
