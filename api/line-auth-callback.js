@@ -12,6 +12,12 @@ function parseCookies(header) {
   return cookies
 }
 
+// Hardcoded rather than derived from the request's Host header, which a
+// caller can set to an arbitrary value — this URL feeds both the LINE
+// token-exchange redirect_uri and the post-login redirect target, so it
+// must come from a trusted source rather than attacker-controlled input.
+const APP_ORIGIN = 'https://coffee-diary-ruddy.vercel.app'
+
 // LINE's web login signs ID tokens with HS256 (using the channel secret),
 // even though LINE's own OIDC discovery document claims ES256 — a known
 // mismatch that breaks strict OIDC clients (including Supabase's built-in
@@ -19,7 +25,7 @@ function parseCookies(header) {
 // token verification itself, then hands the user a Supabase session via
 // the admin API instead of going through Supabase's OIDC flow.
 export default async function handler(req, res) {
-  const origin = `https://${req.headers.host}`
+  const origin = APP_ORIGIN
   const redirectUri = `${origin}/api/line-auth-callback`
 
   // Clear the state cookie on every response path — it's single-use.

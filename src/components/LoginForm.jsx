@@ -26,7 +26,10 @@ export default function LoginForm() {
     const secure = window.location.protocol === 'https:' ? '; secure' : ''
     document.cookie = `line_oauth_state=${state}; path=/; max-age=600; samesite=lax${secure}`
 
-    const redirectUri = `${window.location.origin}/api/line-auth-callback`
+    // Must exactly match the fixed origin api/line-auth-callback.js uses —
+    // LINE requires the redirect_uri at token exchange to match the one
+    // used here at authorize time, so this can't be window.location.origin.
+    const redirectUri = 'https://coffee-diary-ruddy.vercel.app/api/line-auth-callback'
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: import.meta.env.VITE_LINE_CHANNEL_ID,
