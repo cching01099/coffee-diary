@@ -18,12 +18,20 @@ export default function LoginForm() {
 
   function handleLineLogin() {
     setError('')
+    // Stored so api/line-auth-callback.js can confirm the browser completing
+    // the flow is the same one that started it — otherwise someone could
+    // hand another person a link containing their own auth code and get
+    // that person silently logged into the attacker's account (login CSRF).
+    const state = crypto.randomUUID()
+    const secure = window.location.protocol === 'https:' ? '; secure' : ''
+    document.cookie = `line_oauth_state=${state}; path=/; max-age=600; samesite=lax${secure}`
+
     const redirectUri = `${window.location.origin}/api/line-auth-callback`
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: import.meta.env.VITE_LINE_CHANNEL_ID,
       redirect_uri: redirectUri,
-      state: crypto.randomUUID(),
+      state,
       scope: 'openid profile',
     })
     window.location.href = `https://access.line.me/oauth2/v2.1/authorize?${params.toString()}`

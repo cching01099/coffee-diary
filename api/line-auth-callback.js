@@ -1,6 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 import jwt from 'jsonwebtoken'
 
+function parseCookies(header) {
+  const cookies = {}
+  if (!header) return cookies
+  for (const pair of header.split(';')) {
+    const idx = pair.indexOf('=')
+    if (idx === -1) continue
+    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim())
+  }
+  return cookies
+}
+
 // LINE's web login signs ID tokens with HS256 (using the channel secret),
 // even though LINE's own OIDC discovery document claims ES256 — a known
 // mismatch that breaks strict OIDC clients (including Supabase's built-in
@@ -11,8 +22,12 @@ export default async function handler(req, res) {
   const origin = `https://${req.headers.host}`
   const redirectUri = `${origin}/api/line-auth-callback`
 
-  const { code, error: lineError } = req.query
-  if (lineError || !code) {
+  // Clear the state cookie on every response path — it's single-use.
+  res.setHeader('Set-Cookie', 'line_oauth_state=; path=/; max-age=0')
+
+  const { code, state, error: lineError } = req.query
+  const { line_oauth_state: expectedState } = parseCookies(req.headers.cookie)
+  if (lineError || !code || !state || !expectedState || state !== expectedState) {
     res.redirect(302, `${origin}/?error=line_login_failed`)
     return
   }
