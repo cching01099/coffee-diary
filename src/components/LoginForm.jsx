@@ -2,15 +2,10 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { translateAuthError } from '../lib/utils'
 
-// Google + Email/password login controls, shared by the full sign-in flow
-// and the "log in to save" prompt shown to guests.
+// Google login control, shared by the full sign-in flow and the
+// "log in to save" prompt shown to guests.
 export default function LoginForm() {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
-  const [loading, setLoading] = useState(false)
 
   async function handleGoogleLogin() {
     setError('')
@@ -19,25 +14,6 @@ export default function LoginForm() {
       options: { redirectTo: window.location.origin },
     })
     if (error) setError(translateAuthError(error.message))
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setNotice('')
-    setLoading(true)
-    const { error } =
-      mode === 'signin'
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
-    setLoading(false)
-    if (error) {
-      setError(translateAuthError(error.message))
-      return
-    }
-    if (mode === 'signup') {
-      setNotice('註冊成功！請檢查信箱完成驗證後再登入。')
-    }
   }
 
   return (
@@ -56,54 +32,7 @@ export default function LoginForm() {
         使用 Google 登入
       </button>
 
-      <div className="flex items-center gap-3 my-4">
-        <div className="h-px flex-1 bg-line" />
-        <span className="text-[11px] text-ink-dim">或使用 Email</span>
-        <div className="h-px flex-1 bg-line" />
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-line bg-white/60 px-3 py-2.5 text-sm text-ink placeholder:text-ink-dim outline-none focus:border-accent"
-        />
-        <input
-          type="password"
-          required
-          minLength={6}
-          placeholder="密碼（至少 6 碼）"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-line bg-white/60 px-3 py-2.5 text-sm text-ink placeholder:text-ink-dim outline-none focus:border-accent"
-        />
-
-        {error && <p className="text-xs text-[#d74f3b]">{error}</p>}
-        {notice && <p className="text-xs text-accent">{notice}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-full bg-cta text-bg py-2 text-sm font-semibold disabled:opacity-50"
-        >
-          {loading ? '處理中...' : mode === 'signin' ? '登入' : '註冊'}
-        </button>
-      </form>
-
-      <button
-        type="button"
-        onClick={() => {
-          setMode(mode === 'signin' ? 'signup' : 'signin')
-          setError('')
-          setNotice('')
-        }}
-        className="w-full text-center text-xs text-ink-dim mt-4 underline"
-      >
-        {mode === 'signin' ? '還沒有帳號？點此註冊' : '已經有帳號？點此登入'}
-      </button>
+      {error && <p className="text-xs text-[#d74f3b] mt-3">{error}</p>}
     </>
   )
 }
