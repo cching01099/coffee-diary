@@ -16,6 +16,15 @@ export default function LoginForm() {
     if (error) setError(translateAuthError(error.message))
   }
 
+  async function handleLineLogin() {
+    setError('')
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'custom:line',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError(translateAuthError(error.message))
+  }
+
   return (
     <>
       <button
@@ -30,6 +39,15 @@ export default function LoginForm() {
           <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.4l6.6 5.6C41.6 36 44 30.6 44 24c0-1.2-.1-2.4-.4-3.5z"/>
         </svg>
         使用 Google 登入
+      </button>
+
+      <button
+        type="button"
+        onClick={handleLineLogin}
+        className="w-full flex items-center justify-center gap-2 rounded-full py-2.5 text-sm font-medium text-white mt-2.5"
+        style={{ backgroundColor: '#06C755' }}
+      >
+        使用 LINE 登入
       </button>
 
       {error && <p className="text-xs text-[#d74f3b] mt-3">{error}</p>}
