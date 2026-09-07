@@ -31,7 +31,11 @@ export default function PhotoDrop({
     if (!file) return
     setCompressing(true)
     try {
-      onChange(await compressImage(file))
+      const [full, thumb] = await Promise.all([
+        compressImage(file, { maxDimension: 1280, quality: 0.8 }),
+        compressImage(file, { maxDimension: 240, quality: 0.6 }),
+      ])
+      onChange(full, thumb)
     } catch (err) {
       console.error(err)
       alert('照片處理失敗，請換一張試試')
@@ -43,7 +47,7 @@ export default function PhotoDrop({
 
   function handleRemove(e) {
     e.stopPropagation()
-    onChange(null)
+    onChange(null, null)
     if (inputRef.current) inputRef.current.value = ''
   }
 

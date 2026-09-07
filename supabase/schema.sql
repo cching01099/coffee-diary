@@ -9,6 +9,7 @@ create table public.entries (
   art text,
   note text,
   photo text,
+  photo_thumb text,
   photo_position text,
   photo_zoom numeric,
   created_at timestamptz not null default now()
@@ -55,6 +56,11 @@ create policy "own options" on public.user_options for all
 grant select, insert, update, delete on public.entries to authenticated;
 grant select, insert, update, delete on public.purchases to authenticated;
 grant select, insert, update, delete on public.user_options to authenticated;
+
+-- service_role bypasses RLS but still needs the same table-level GRANT —
+-- required by one-off maintenance scripts (e.g. scripts/backfill-photo-thumbs.mjs)
+-- that use the service role key instead of a logged-in user's session.
+grant select, update on public.entries to service_role;
 
 -- auto-create a default options row whenever someone signs up
 create or replace function public.handle_new_user()

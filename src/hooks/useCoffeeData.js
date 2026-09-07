@@ -21,6 +21,7 @@ function groupEntriesByDate(rows) {
       art: row.art,
       note: row.note,
       photo: row.photo,
+      photoThumb: row.photo_thumb,
       photoPosition: row.photo_position,
       photoZoom: row.photo_zoom,
     })
@@ -140,10 +141,17 @@ export function useCoffeeData(userId) {
   }, [beanOptions, artOptions, userId])
 
   async function addLog(dateKey, data) {
-    const { url: photoUrl, error: uploadError } = await uploadPhotoIfNeeded(data.photo, userId)
+    const [{ url: photoUrl, error: uploadError }, { url: thumbUrl, error: thumbError }] = await Promise.all([
+      uploadPhotoIfNeeded(data.photo, userId),
+      uploadPhotoIfNeeded(data.photoThumb, userId),
+    ])
     if (uploadError) {
       console.error(uploadError)
       return uploadError
+    }
+    if (thumbError) {
+      console.error(thumbError)
+      return thumbError
     }
     const { data: row, error } = await supabase
       .from('entries')
@@ -155,6 +163,7 @@ export function useCoffeeData(userId) {
         art: data.art,
         note: data.note,
         photo: photoUrl,
+        photo_thumb: thumbUrl,
         photo_position: data.photoPosition,
         photo_zoom: data.photoZoom,
       })
@@ -173,6 +182,7 @@ export function useCoffeeData(userId) {
         art: row.art,
         note: row.note,
         photo: row.photo,
+        photoThumb: row.photo_thumb,
         photoPosition: row.photo_position,
         photoZoom: row.photo_zoom,
       })
@@ -184,10 +194,17 @@ export function useCoffeeData(userId) {
   async function updateLog(dateKey, idx, data) {
     const existing = entries[dateKey]?.[idx]
     if (!existing) return null
-    const { url: photoUrl, error: uploadError } = await uploadPhotoIfNeeded(data.photo, userId)
+    const [{ url: photoUrl, error: uploadError }, { url: thumbUrl, error: thumbError }] = await Promise.all([
+      uploadPhotoIfNeeded(data.photo, userId),
+      uploadPhotoIfNeeded(data.photoThumb, userId),
+    ])
     if (uploadError) {
       console.error(uploadError)
       return uploadError
+    }
+    if (thumbError) {
+      console.error(thumbError)
+      return thumbError
     }
     const newDateKey = data.dateKey || dateKey
     const { error } = await supabase
@@ -199,6 +216,7 @@ export function useCoffeeData(userId) {
         art: data.art,
         note: data.note,
         photo: photoUrl,
+        photo_thumb: thumbUrl,
         photo_position: data.photoPosition,
         photo_zoom: data.photoZoom,
       })
@@ -215,6 +233,7 @@ export function useCoffeeData(userId) {
         art: data.art,
         note: data.note,
         photo: photoUrl,
+        photoThumb: thumbUrl,
         photoPosition: data.photoPosition,
         photoZoom: data.photoZoom,
       }

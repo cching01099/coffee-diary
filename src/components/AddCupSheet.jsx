@@ -30,6 +30,7 @@ export default function AddCupSheet({
   const [art, setArt] = useState('')
   const [note, setNote] = useState('')
   const [photo, setPhoto] = useState(null)
+  const [photoThumb, setPhotoThumb] = useState(null)
   const [photoPosition, setPhotoPosition] = useState({ x: 50, y: 50 })
   const [photoZoom, setPhotoZoom] = useState(1)
   const [saving, setSaving] = useState(false)
@@ -45,6 +46,7 @@ export default function AddCupSheet({
       setArt(editEntry.art)
       setNote(editEntry.note || '')
       setPhoto(editEntry.photo || null)
+      setPhotoThumb(editEntry.photoThumb || null)
       setPhotoPosition(parsePosition(editEntry.photoPosition))
       setPhotoZoom(editEntry.photoZoom || 1)
     } else {
@@ -54,6 +56,7 @@ export default function AddCupSheet({
       setArt('')
       setNote('')
       setPhoto(null)
+      setPhotoThumb(null)
       setPhotoPosition({ x: 50, y: 50 })
       setPhotoZoom(1)
     }
@@ -65,8 +68,9 @@ export default function AddCupSheet({
     ? new Date(dateKey).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' })
     : ''
 
-  function handlePhotoChange(next) {
+  function handlePhotoChange(next, nextThumb) {
     setPhoto(next)
+    setPhotoThumb(nextThumb)
     if (!next) {
       setPhotoPosition({ x: 50, y: 50 })
       setPhotoZoom(1)
@@ -82,6 +86,7 @@ export default function AddCupSheet({
       art: art || '其他',
       note,
       photo,
+      photoThumb: photo ? photoThumb : null,
       photoPosition: photo ? `${photoPosition.x}% ${photoPosition.y}%` : null,
       photoZoom: photo ? photoZoom : null,
     })

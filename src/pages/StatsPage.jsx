@@ -72,7 +72,7 @@ export default function StatsPage({ data }) {
         beanCount[e.bean] = (beanCount[e.bean] || 0) + 1
         if (e.roast) roastCount[e.roast] = (roastCount[e.roast] || 0) + 1
         artCount[e.art] = (artCount[e.art] || 0) + 1
-        if (e.photo) photos.push({ src: e.photo, position: e.photoPosition, zoom: e.photoZoom })
+        if (e.photo) photos.push({ src: e.photoThumb || e.photo, position: e.photoPosition, zoom: e.photoZoom })
       })
     })
     const avgPerDay = cups / periodDayCount(period, anchor)

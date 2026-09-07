@@ -106,7 +106,7 @@ export default function CalendarPage({ data }) {
                     <>
                       <div className="absolute inset-0 bg-line animate-pulse" />
                       <img
-                        src={photoEntry.photo}
+                        src={photoEntry.photoThumb || photoEntry.photo}
                         alt=""
                         loading="lazy"
                         decoding="async"
@@ -165,7 +165,7 @@ export default function CalendarPage({ data }) {
                 <>
                   <div className="absolute inset-0 bg-line animate-pulse" />
                   <img
-                    src={e.photo}
+                    src={e.photoThumb || e.photo}
                     alt=""
                     loading="lazy"
                     decoding="async"
