@@ -37,9 +37,21 @@ create table public.user_options (
   art_options text[] not null default array['無','愛心','鬱金香','天鵝','葉子','其他']
 );
 
+-- maps a LINE user (sub claim) to the Supabase auth user created for them.
+-- Written only by api/line-auth-callback.js via the service role key, since
+-- LINE Login is handled by our own backend rather than Supabase's built-in
+-- OIDC support (LINE's web login signs ID tokens with HS256, which mismatches
+-- the ES256 its discovery document advertises and breaks Supabase's OIDC client).
+create table public.line_identities (
+  line_sub text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
 alter table public.entries enable row level security;
 alter table public.purchases enable row level security;
 alter table public.user_options enable row level security;
+alter table public.line_identities enable row level security;
 
 create policy "own entries" on public.entries for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -59,8 +71,10 @@ grant select, insert, update, delete on public.user_options to authenticated;
 
 -- service_role bypasses RLS but still needs the same table-level GRANT —
 -- required by one-off maintenance scripts (e.g. scripts/backfill-photo-thumbs.mjs)
--- that use the service role key instead of a logged-in user's session.
+-- and by api/line-auth-callback.js, which both use the service role key
+-- instead of a logged-in user's session.
 grant select, update on public.entries to service_role;
+grant select, insert on public.line_identities to service_role;
 
 -- auto-create a default options row whenever someone signs up
 create or replace function public.handle_new_user()

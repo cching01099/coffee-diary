@@ -16,13 +16,17 @@ export default function LoginForm() {
     if (error) setError(translateAuthError(error.message))
   }
 
-  async function handleLineLogin() {
+  function handleLineLogin() {
     setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'custom:line',
-      options: { redirectTo: window.location.origin },
+    const redirectUri = `${window.location.origin}/api/line-auth-callback`
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: import.meta.env.VITE_LINE_CHANNEL_ID,
+      redirect_uri: redirectUri,
+      state: crypto.randomUUID(),
+      scope: 'openid profile',
     })
-    if (error) setError(translateAuthError(error.message))
+    window.location.href = `https://access.line.me/oauth2/v2.1/authorize?${params.toString()}`
   }
 
   return (
