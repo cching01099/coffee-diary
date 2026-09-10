@@ -24,6 +24,16 @@ export default function App({ data, headerRight, badge }) {
       <div className="max-w-md mx-auto px-4 pt-4 pb-24">
         {data.loading ? (
           <div className="min-h-[70vh] flex items-center justify-center text-ink-dim text-sm">載入中...</div>
+        ) : data.error ? (
+          <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 text-ink-dim text-sm">
+            <p>資料載入失敗，請檢查網路連線</p>
+            <button
+              onClick={data.refetch}
+              className="px-4 py-1.5 rounded-full border border-accent text-accent text-sm font-semibold"
+            >
+              重試
+            </button>
+          </div>
         ) : (
           <Routes>
             <Route path="/" element={<Navigate to="/calendar" replace />} />

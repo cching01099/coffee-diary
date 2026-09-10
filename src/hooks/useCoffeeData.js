@@ -66,11 +66,12 @@ export function useCoffeeData(userId) {
   const [artOptions, setArtOptions] = useState(DEFAULT_ART_OPTIONS)
   const [loading, setLoading] = useState(true) // entries + options only — purchases loads on demand
   const [purchasesLoading, setPurchasesLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
   const optionsLoaded = useRef(false)
   const purchasesLoaded = useRef(false)
 
   useEffect(() => {
-    console.log('[DEBUG] useCoffeeData effect fired', { userId, at: Date.now() })
     if (!userId) return
     let cancelled = false
     optionsLoaded.current = false
@@ -85,21 +86,17 @@ export function useCoffeeData(userId) {
           supabase.from('user_options').select('*').eq('user_id', userId).maybeSingle(),
         ])
         if (cancelled) return
-        console.log('[DEBUG] entries query result', {
-          userId,
-          rowCount: entryResult.data?.length,
-          error: entryResult.error,
-          at: Date.now(),
-        })
-        if (entryResult.error) console.error(entryResult.error)
-        if (optionsResult.error) console.error(optionsResult.error)
+        if (entryResult.error) throw entryResult.error
+        if (optionsResult.error) throw optionsResult.error
         setEntries(groupEntriesByDate(entryResult.data || []))
         const options = optionsResult.data
         setBeanOptions(options?.bean_options?.length ? options.bean_options : DEFAULT_BEAN_OPTIONS)
         setArtOptions(options?.art_options?.length ? options.art_options : DEFAULT_ART_OPTIONS)
         optionsLoaded.current = true
+        setError(null)
       } catch (err) {
         console.error(err)
+        if (!cancelled) setError(err)
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -109,7 +106,11 @@ export function useCoffeeData(userId) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, retryCount])
+
+  function refetch() {
+    setRetryCount((c) => c + 1)
+  }
 
   // Purchases page calls this on mount — no need to fetch it before the
   // calendar (the default landing page) can render.
@@ -355,6 +356,8 @@ export function useCoffeeData(userId) {
     artOptions,
     loading,
     purchasesLoading,
+    error,
+    refetch,
     loadPurchases,
     addLog,
     updateLog,
