@@ -47,8 +47,12 @@ export default function AuthGate() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth.getSession().then(({ data }) => {
+      console.log('[DEBUG] getSession resolved', { userId: data.session?.user?.id, at: Date.now() })
+      setSession(data.session)
+    })
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      console.log('[DEBUG] onAuthStateChange', { event: _event, userId: nextSession?.user?.id, at: Date.now() })
       setSession(nextSession)
     })
     return () => listener.subscription.unsubscribe()

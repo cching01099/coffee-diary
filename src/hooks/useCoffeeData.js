@@ -70,6 +70,7 @@ export function useCoffeeData(userId) {
   const purchasesLoaded = useRef(false)
 
   useEffect(() => {
+    console.log('[DEBUG] useCoffeeData effect fired', { userId, at: Date.now() })
     if (!userId) return
     let cancelled = false
     optionsLoaded.current = false
@@ -84,6 +85,12 @@ export function useCoffeeData(userId) {
           supabase.from('user_options').select('*').eq('user_id', userId).maybeSingle(),
         ])
         if (cancelled) return
+        console.log('[DEBUG] entries query result', {
+          userId,
+          rowCount: entryResult.data?.length,
+          error: entryResult.error,
+          at: Date.now(),
+        })
         if (entryResult.error) console.error(entryResult.error)
         if (optionsResult.error) console.error(optionsResult.error)
         setEntries(groupEntriesByDate(entryResult.data || []))
