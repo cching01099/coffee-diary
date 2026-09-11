@@ -1,4 +1,4 @@
-# 咖啡日記（React + Tailwind + Vite + Supabase）
+# Pourista（React + Tailwind + Vite + Supabase）
 
 ## 開始使用
 

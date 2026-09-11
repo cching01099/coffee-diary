@@ -10,7 +10,7 @@ export default function App({ data, headerRight, badge }) {
       <div className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line">
         <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">☕ 咖啡日記</h1>
+            <h1 className="text-lg font-semibold">☕ Pourista</h1>
             {badge && (
               <span className="text-[10px] text-ink-dim border border-line rounded-full px-2 py-0.5">
                 {badge}
