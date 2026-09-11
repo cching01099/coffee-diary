@@ -29,7 +29,7 @@ export default function LoginForm() {
     // Must exactly match the fixed origin api/line-auth-callback.js uses —
     // LINE requires the redirect_uri at token exchange to match the one
     // used here at authorize time, so this can't be window.location.origin.
-    const redirectUri = 'https://coffee-diary-ruddy.vercel.app/api/line-auth-callback'
+    const redirectUri = 'https://pourista-ruddy.vercel.app/api/line-auth-callback'
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: import.meta.env.VITE_LINE_CHANNEL_ID,

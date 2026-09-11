@@ -16,7 +16,7 @@ function parseCookies(header) {
 // caller can set to an arbitrary value — this URL feeds both the LINE
 // token-exchange redirect_uri and the post-login redirect target, so it
 // must come from a trusted source rather than attacker-controlled input.
-const APP_ORIGIN = 'https://coffee-diary-ruddy.vercel.app'
+const APP_ORIGIN = 'https://pourista-ruddy.vercel.app'
 
 // LINE's web login signs ID tokens with HS256 (using the channel secret),
 // even though LINE's own OIDC discovery document claims ES256 — a known
