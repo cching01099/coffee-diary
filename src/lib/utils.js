@@ -75,6 +75,18 @@ export function compressImage(file, { maxDimension = 1280, quality = 0.8 } = {})
   })
 }
 
+export function timeAgo(isoString) {
+  const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000)
+  if (seconds < 60) return '剛剛'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} 分鐘前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} 小時前`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days} 天前`
+  return new Date(isoString).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric' })
+}
+
 export function translateAuthError(message) {
   if (!message) return message
   if (/security purposes.*only request this/i.test(message)) {

@@ -48,10 +48,53 @@ create table public.line_identities (
   created_at timestamptz not null default now()
 );
 
+-- public profile info shown on community posts/replies — auth.users itself
+-- isn't queryable from the client, so this mirrors the bits we need to show.
+create table public.profiles (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  display_name text,
+  avatar_url text
+);
+
+-- community forum: posts, likes, replies. Posts/replies reference
+-- public.profiles (rather than auth.users directly) so PostgREST can embed
+-- author info in one query, e.g. `.select('*, profiles(display_name)')`.
+create table public.posts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(user_id) on delete cascade,
+  content text,
+  photos text[] not null default '{}',
+  photo_thumbs text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  constraint posts_photos_limit check (array_length(photos, 1) is null or array_length(photos, 1) <= 5),
+  constraint posts_photo_thumbs_limit check (array_length(photo_thumbs, 1) is null or array_length(photo_thumbs, 1) <= 5)
+);
+create index posts_created_at_idx on public.posts (created_at desc);
+
+create table public.post_likes (
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+
+create table public.post_replies (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid not null references public.profiles(user_id) on delete cascade,
+  content text not null,
+  created_at timestamptz not null default now()
+);
+create index post_replies_post_id_idx on public.post_replies (post_id, created_at);
+
 alter table public.entries enable row level security;
 alter table public.purchases enable row level security;
 alter table public.user_options enable row level security;
 alter table public.line_identities enable row level security;
+alter table public.profiles enable row level security;
+alter table public.posts enable row level security;
+alter table public.post_likes enable row level security;
+alter table public.post_replies enable row level security;
 
 create policy "own entries" on public.entries for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -62,12 +105,40 @@ create policy "own purchases" on public.purchases for all
 create policy "own options" on public.user_options for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+-- community forum is public: anyone (including signed-out visitors) can read,
+-- but writes are restricted to the row's own owner.
+create policy "profiles are publicly readable" on public.profiles for select using (true);
+create policy "own profile" on public.profiles for update using (auth.uid() = user_id);
+
+create policy "posts are publicly readable" on public.posts for select using (true);
+create policy "own posts insert" on public.posts for insert with check (auth.uid() = user_id);
+create policy "own posts update" on public.posts for update using (auth.uid() = user_id);
+create policy "own posts delete" on public.posts for delete using (auth.uid() = user_id);
+
+create policy "likes are publicly readable" on public.post_likes for select using (true);
+create policy "own likes insert" on public.post_likes for insert with check (auth.uid() = user_id);
+create policy "own likes delete" on public.post_likes for delete using (auth.uid() = user_id);
+
+create policy "replies are publicly readable" on public.post_replies for select using (true);
+create policy "own replies insert" on public.post_replies for insert with check (auth.uid() = user_id);
+create policy "own replies delete" on public.post_replies for delete using (auth.uid() = user_id);
+
 -- "Automatically expose new tables" was left off when the project was created,
 -- so the authenticated role needs these grants — RLS alone isn't enough,
 -- Postgres checks table-level GRANTs before it ever evaluates a row policy.
 grant select, insert, update, delete on public.entries to authenticated;
 grant select, insert, update, delete on public.purchases to authenticated;
 grant select, insert, update, delete on public.user_options to authenticated;
+grant select, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.posts to authenticated;
+grant select, insert, delete on public.post_likes to authenticated;
+grant select, insert, delete on public.post_replies to authenticated;
+
+-- the community forum is readable while signed out too
+grant select on public.profiles to anon;
+grant select on public.posts to anon;
+grant select on public.post_likes to anon;
+grant select on public.post_replies to anon;
 
 -- service_role bypasses RLS but still needs the same table-level GRANT —
 -- required by one-off maintenance scripts (e.g. scripts/backfill-photo-thumbs.mjs)
@@ -76,11 +147,13 @@ grant select, insert, update, delete on public.user_options to authenticated;
 grant select, update on public.entries to service_role;
 grant select, insert on public.line_identities to service_role;
 
--- auto-create a default options row whenever someone signs up
+-- auto-create a default options row + public profile whenever someone signs up
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
   insert into public.user_options (user_id) values (new.id);
+  insert into public.profiles (user_id, display_name, avatar_url)
+    values (new.id, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;
@@ -88,6 +161,13 @@ $$ language plpgsql security definer set search_path = public;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- backfill profiles for users who signed up before this trigger existed —
+-- posts.user_id references profiles(user_id), so without this they can't post
+insert into public.profiles (user_id, display_name, avatar_url)
+select id, raw_user_meta_data->>'full_name', raw_user_meta_data->>'avatar_url'
+from auth.users
+on conflict (user_id) do nothing;
 
 -- Storage: coffee-photos bucket, path format is "<user_id>/<filename>"
 create policy "users can upload their own coffee photos"

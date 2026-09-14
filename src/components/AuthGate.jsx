@@ -14,6 +14,7 @@ function AuthenticatedShell({ user, onSignOut }) {
   return (
     <App
       data={data}
+      userId={user.id}
       headerRight={<AccountMenu displayName={displayName} avatarUrl={avatarUrl} onSignOut={onSignOut} />}
     />
   )
@@ -28,6 +29,7 @@ function GuestShell() {
       <App
         data={data}
         badge="體驗版"
+        onRequireLogin={() => setPromptOpen(true)}
         headerRight={
           <button
             onClick={() => setPromptOpen(true)}

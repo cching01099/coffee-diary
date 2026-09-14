@@ -18,3 +18,11 @@ body {
 .fade-in {
   animation: fade-in 0.25s ease-out;
 }
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,16 +1,23 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import BottomTabBar from './components/BottomTabBar'
 import CalendarPage from './pages/CalendarPage'
 import PurchasesPage from './pages/PurchasesPage'
 import StatsPage from './pages/StatsPage'
+import CommunityPage from './pages/CommunityPage'
+import PostDetailPage from './pages/PostDetailPage'
+import AuthorPage from './pages/AuthorPage'
+import { useCommunityData } from './hooks/useCommunityData'
 
-export default function App({ data, headerRight, badge }) {
+export default function App({ data, headerRight, badge, userId = null, onRequireLogin = () => {} }) {
+  const community = useCommunityData(userId, onRequireLogin)
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line">
         <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold">☕ Pourista</h1>
+            <h1 className="text-lg font-semibold">
+              <Link to="/calendar">☕ Pourista</Link>
+            </h1>
             {badge && (
               <span className="text-[10px] text-ink-dim border border-line rounded-full px-2 py-0.5">
                 {badge}
@@ -40,6 +47,15 @@ export default function App({ data, headerRight, badge }) {
             <Route path="/calendar" element={<CalendarPage data={data} />} />
             <Route path="/purchases" element={<PurchasesPage data={data} />} />
             <Route path="/stats" element={<StatsPage data={data} />} />
+            <Route path="/community" element={<CommunityPage community={community} userId={userId} />} />
+            <Route
+              path="/community/post/:postId"
+              element={<PostDetailPage community={community} userId={userId} onRequireLogin={onRequireLogin} />}
+            />
+            <Route
+              path="/community/u/:authorId"
+              element={<AuthorPage userId={userId} onRequireLogin={onRequireLogin} />}
+            />
             <Route path="*" element={<Navigate to="/calendar" replace />} />
           </Routes>
         )}
