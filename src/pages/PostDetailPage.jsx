@@ -100,7 +100,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
 
   async function handleConfirmDelete() {
     setConfirmingDelete(false)
-    const err = await deletePost(post.id)
+    const err = await deletePost(post.id, post)
     if (err) {
       alert(`刪除失敗：${err.message}`)
       return
@@ -143,34 +143,42 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         onCancel={() => setConfirmingDelete(false)}
       />
 
-      <div className="mb-3 text-sm font-medium text-ink-dim">回覆</div>
-      {replies.length === 0 ? (
-        <div className="text-center py-6 text-ink-dim text-sm">還沒有回覆，第一個留言吧</div>
-      ) : (
-        replies.map((r) => (
-          <div key={r.id} className="bg-card rounded-2xl border border-line p-3.5 mb-2">
-            <div className="flex items-start gap-2.5 mb-1.5">
+      <div className="bg-card rounded-2xl border border-line overflow-hidden">
+        <div className="px-4 py-3 text-sm font-medium text-ink-dim border-b border-line">回覆</div>
+        {replies.length === 0 ? (
+          <div className="text-center py-6 text-ink-dim text-sm">還沒有回覆，第一個留言吧</div>
+        ) : (
+          replies.map((r, i) => (
+            <div key={r.id} className={`p-3.5 ${i !== replies.length - 1 ? 'border-b border-line' : ''}`}>
               <button
                 onClick={() => navigate(`/community/u/${r.userId}`, { state: { fromApp: true } })}
-                className="flex items-center gap-2 min-w-0 flex-1 text-left"
+                className="flex items-start gap-2.5 min-w-0 w-full text-left mb-1.5"
               >
                 <Avatar name={r.authorName} url={r.authorAvatar} />
-                <span className="font-semibold text-[13px] truncate">{r.authorName}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-[13px] truncate">{r.authorName}</div>
+                  <div className="text-[11px] text-ink-dim">{timeAgo(r.createdAt)}</div>
+                </div>
               </button>
-              <span className="text-[11px] text-ink-dim flex-shrink-0">{timeAgo(r.createdAt)}</span>
+              <p className="text-[14px] whitespace-pre-wrap">{r.content}</p>
             </div>
-            <p className="text-[14px] whitespace-pre-wrap">{r.content}</p>
-          </div>
-        ))
-      )}
+          ))
+        )}
+      </div>
 
-      <div className="sticky bottom-[76px] mt-4 bg-card rounded-2xl border border-line p-2.5 flex items-center gap-2">
-        <input
+      <div className="sticky bottom-[76px] mt-4 bg-card rounded-2xl border border-line p-2.5 flex items-end gap-2">
+        <textarea
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              handleSendReply()
+            }
+          }}
           placeholder="留下你的回覆..."
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-dim/60"
+          rows={1}
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
         />
         <button
           onClick={handleSendReply}

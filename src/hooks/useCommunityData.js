@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { uploadPhotoPair, removePhotos } from '../lib/storagePhotos'
 
 const PAGE_SIZE = 30
 
@@ -13,22 +14,6 @@ function mapPost(row) {
     createdAt: row.created_at,
     authorName: row.profiles?.display_name || '匿名咖啡愛好者',
     authorAvatar: row.profiles?.avatar_url || null,
-  }
-}
-
-// Uploads a freshly-picked local photo (a base64 data URL) to Storage and
-// returns its public URL — same bucket/convention as the diary's photos.
-async function uploadPhotoIfNeeded(photo, userId) {
-  if (!photo || !photo.startsWith('data:')) return { url: photo, error: null }
-  try {
-    const blob = await (await fetch(photo)).blob()
-    const path = `${userId}/${crypto.randomUUID()}.jpg`
-    const { error } = await supabase.storage.from('coffee-photos').upload(path, blob, { contentType: 'image/jpeg' })
-    if (error) return { url: null, error }
-    const { data } = supabase.storage.from('coffee-photos').getPublicUrl(path)
-    return { url: data.publicUrl, error: null }
-  } catch (err) {
-    return { url: null, error: err }
   }
 }
 
@@ -106,11 +91,9 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
   async function addPost({ content, photos, photoThumbs }) {
     if (!userId) return onRequireLogin()
     const uploaded = await Promise.all(
-      (photos || []).map((photo, i) =>
-        Promise.all([uploadPhotoIfNeeded(photo, userId), uploadPhotoIfNeeded(photoThumbs?.[i], userId)]),
-      ),
+      (photos || []).map((photo, i) => uploadPhotoPair(photo, photoThumbs?.[i], userId)),
     )
-    const uploadError = uploaded.map(([full, thumb]) => full.error || thumb.error).find(Boolean)
+    const uploadError = uploaded.map((u) => u.error).find(Boolean)
     if (uploadError) return uploadError
 
     const { data: row, error } = await supabase
@@ -118,8 +101,8 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
       .insert({
         user_id: userId,
         content: content || null,
-        photos: uploaded.map(([full]) => full.url),
-        photo_thumbs: uploaded.map(([, thumb]) => thumb.url),
+        photos: uploaded.map((u) => u.photoUrl),
+        photo_thumbs: uploaded.map((u) => u.thumbUrl),
       })
       .select('*, profiles(display_name, avatar_url)')
       .single()
@@ -128,11 +111,16 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     return null
   }
 
-  async function deletePost(postId) {
+  // knownPost lets a caller pass the post it already has locally (e.g. a
+  // detail page reached via direct link, whose post may not be in this
+  // hook's own `posts` list) so its photos still get cleaned up.
+  async function deletePost(postId, knownPost) {
     if (!userId) return onRequireLogin()
+    const post = knownPost || posts.find((p) => p.id === postId)
     const { error } = await supabase.from('posts').delete().eq('id', postId)
     if (error) return error
     setPosts((prev) => prev.filter((p) => p.id !== postId))
+    removePhotos([...(post?.photos || []), ...(post?.photoThumbs || [])])
     return null
   }
 

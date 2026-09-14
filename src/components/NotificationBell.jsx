@@ -18,7 +18,9 @@ export default function NotificationBell({ notifications, unreadCount, markAsRea
   function handleClick(n) {
     setOpen(false)
     if (!n.read) markAsRead(n.id)
-    navigate(`/community/post/${n.postId}`, { state: { fromApp: true } })
+    // no fromApp state — notifications can be opened from any page, so
+    // "back" on the post should land in /community, not wherever we were
+    navigate(`/community/post/${n.postId}`)
   }
 
   return (

@@ -79,9 +79,9 @@ export default function AuthorPage({ userId, onRequireLogin }) {
             replyCount={author.replyCounts[post.id]}
             onToggleLike={author.toggleLike}
             onOpen={(id) => navigate(`/community/post/${id}`, { state: { fromApp: true } })}
+            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } })}
             canDelete={userId && post.userId === userId}
             onDelete={setDeleteTargetId}
-            hideAuthor
           />
         ))
       )}

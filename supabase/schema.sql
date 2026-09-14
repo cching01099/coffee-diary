@@ -234,6 +234,16 @@ create trigger on_post_reply_created
   for each row execute function public.notify_on_reply();
 
 -- Storage: coffee-photos bucket, path format is "<user_id>/<filename>"
+-- Select is required even though the bucket is public — public only lets
+-- anyone download a file by its known URL, bypassing RLS on that one path.
+-- Management operations like remove()/list() still query storage.objects
+-- through normal RLS, so without this, the app can upload/replace its own
+-- files but can never find them again to delete/list — remove() just
+-- silently matches nothing (200 OK, empty result, no error).
+create policy "users can view their own coffee photos"
+  on storage.objects for select to authenticated
+  using (bucket_id = 'coffee-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+
 create policy "users can upload their own coffee photos"
   on storage.objects for insert to authenticated
   with check (bucket_id = 'coffee-photos' and (storage.foldername(name))[1] = auth.uid()::text);

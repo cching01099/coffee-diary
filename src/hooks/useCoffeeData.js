@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { uploadPhotoPair, removePhotos } from '../lib/storagePhotos'
 
 const DEFAULT_BEAN_OPTIONS = ['星巴克', '咖樂迪', '超市', '其他']
 const DEFAULT_ART_OPTIONS = ['無', '愛心', '鬱金香', '天鵝', '葉子', '其他']
@@ -27,23 +28,6 @@ function groupEntriesByDate(rows) {
     })
   }
   return map
-}
-
-// Uploads a freshly-picked local photo (a base64 data URL) to Storage and
-// returns its public URL. A photo that's already a URL (unchanged from an
-// earlier save) or null is passed through untouched — no re-upload.
-async function uploadPhotoIfNeeded(photo, userId) {
-  if (!photo || !photo.startsWith('data:')) return { url: photo, error: null }
-  try {
-    const blob = await (await fetch(photo)).blob()
-    const path = `${userId}/${crypto.randomUUID()}.jpg`
-    const { error } = await supabase.storage.from('coffee-photos').upload(path, blob, { contentType: 'image/jpeg' })
-    if (error) return { url: null, error }
-    const { data } = supabase.storage.from('coffee-photos').getPublicUrl(path)
-    return { url: data.publicUrl, error: null }
-  } catch (err) {
-    return { url: null, error: err }
-  }
 }
 
 function mapPurchaseRow(r) {
@@ -149,17 +133,10 @@ export function useCoffeeData(userId) {
   }, [beanOptions, artOptions, userId])
 
   async function addLog(dateKey, data) {
-    const [{ url: photoUrl, error: uploadError }, { url: thumbUrl, error: thumbError }] = await Promise.all([
-      uploadPhotoIfNeeded(data.photo, userId),
-      uploadPhotoIfNeeded(data.photoThumb, userId),
-    ])
+    const { photoUrl, thumbUrl, error: uploadError } = await uploadPhotoPair(data.photo, data.photoThumb, userId)
     if (uploadError) {
       console.error(uploadError)
       return uploadError
-    }
-    if (thumbError) {
-      console.error(thumbError)
-      return thumbError
     }
     const { data: row, error } = await supabase
       .from('entries')
@@ -202,17 +179,10 @@ export function useCoffeeData(userId) {
   async function updateLog(dateKey, idx, data) {
     const existing = entries[dateKey]?.[idx]
     if (!existing) return null
-    const [{ url: photoUrl, error: uploadError }, { url: thumbUrl, error: thumbError }] = await Promise.all([
-      uploadPhotoIfNeeded(data.photo, userId),
-      uploadPhotoIfNeeded(data.photoThumb, userId),
-    ])
+    const { photoUrl, thumbUrl, error: uploadError } = await uploadPhotoPair(data.photo, data.photoThumb, userId)
     if (uploadError) {
       console.error(uploadError)
       return uploadError
-    }
-    if (thumbError) {
-      console.error(thumbError)
-      return thumbError
     }
     const newDateKey = data.dateKey || dateKey
     const { error } = await supabase
@@ -233,6 +203,9 @@ export function useCoffeeData(userId) {
       console.error(error)
       return error
     }
+    // the entry now points at the new photo (or none) — clean up the old
+    // one if it was replaced or removed
+    if (existing.photo && existing.photo !== photoUrl) removePhotos([existing.photo, existing.photoThumb])
     setEntries((prev) => {
       const updated = {
         id: existing.id,
@@ -268,6 +241,7 @@ export function useCoffeeData(userId) {
       console.error(error)
       return error
     }
+    removePhotos([existing.photo, existing.photoThumb])
     setEntries((prev) => {
       const list = [...(prev[dateKey] || [])]
       list.splice(idx, 1)
