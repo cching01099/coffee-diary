@@ -137,7 +137,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       <ConfirmDialog
         open={confirmingDelete}
         title="刪除貼文"
-        message="確定要刪除此貼文？"
+        message="確定要刪除此篇貼文？"
         confirmLabel="刪除"
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmingDelete(false)}

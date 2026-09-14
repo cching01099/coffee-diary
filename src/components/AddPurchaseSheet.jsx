@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fmtKey } from '../lib/utils'
+import ConfirmDialog from './ConfirmDialog'
 
 const blank = { date: '', beanBrand: '', beanWeight: '', beanPrice: '', milkBrand: '', milkVolume: '', milkPrice: '' }
 
@@ -20,6 +21,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
   const [form, setForm] = useState(blank)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -41,7 +43,8 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
     setSaving(false)
   }
 
-  async function handleDeleteClick() {
+  async function handleConfirmDelete() {
+    setConfirmingDelete(false)
     setDeleting(true)
     await onDelete()
     setDeleting(false)
@@ -72,7 +75,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
           {editPurchase && (
             <div className="mb-5">
               <button
-                onClick={handleDeleteClick}
+                onClick={() => setConfirmingDelete(true)}
                 disabled={saving || deleting}
                 className="w-full text-center py-2.5 rounded-lg border border-[#8C3A2E] text-[#8C3A2E] disabled:opacity-50"
               >
@@ -105,6 +108,15 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="刪除採購"
+        message="確定要刪除此筆採購？"
+        confirmLabel="刪除"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   )
 }

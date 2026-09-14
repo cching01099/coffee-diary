@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import OptionGrid from './OptionGrid'
 import PhotoDrop from './PhotoDrop'
 import RoastSlider from './RoastSlider'
+import ConfirmDialog from './ConfirmDialog'
 
 function parsePosition(str) {
   if (!str) return { x: 50, y: 50 }
@@ -35,6 +36,7 @@ export default function AddCupSheet({
   const [photoZoom, setPhotoZoom] = useState(1)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   useEffect(() => {
     if (!isOpen) return
@@ -93,7 +95,8 @@ export default function AddCupSheet({
     setSaving(false)
   }
 
-  async function handleDeleteClick() {
+  async function handleConfirmDelete() {
+    setConfirmingDelete(false)
     setDeleting(true)
     await onDelete()
     setDeleting(false)
@@ -133,7 +136,7 @@ export default function AddCupSheet({
           {editEntry && (
             <div className="mb-5">
               <button
-                onClick={handleDeleteClick}
+                onClick={() => setConfirmingDelete(true)}
                 disabled={saving || deleting}
                 className="w-full text-center py-2.5 rounded-lg border border-[#8C3A2E] text-[#8C3A2E] disabled:opacity-50"
               >
@@ -200,6 +203,15 @@ export default function AddCupSheet({
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="刪除記錄"
+        message="確定要刪除此筆記錄？"
+        confirmLabel="刪除"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   )
 }

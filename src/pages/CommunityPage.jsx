@@ -57,7 +57,7 @@ export default function CommunityPage({ community, userId }) {
       <ConfirmDialog
         open={deleteTargetId !== null}
         title="刪除貼文"
-        message="確定要刪除此貼文？"
+        message="確定要刪除此篇貼文？"
         confirmLabel="刪除"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTargetId(null)}
