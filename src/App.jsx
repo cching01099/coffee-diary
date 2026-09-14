@@ -6,10 +6,14 @@ import StatsPage from './pages/StatsPage'
 import CommunityPage from './pages/CommunityPage'
 import PostDetailPage from './pages/PostDetailPage'
 import AuthorPage from './pages/AuthorPage'
+import NotificationsPage from './pages/NotificationsPage'
+import NotificationBell from './components/NotificationBell'
 import { useCommunityData } from './hooks/useCommunityData'
+import { useNotifications } from './hooks/useNotifications'
 
 export default function App({ data, headerRight, badge, userId = null, onRequireLogin = () => {} }) {
   const community = useCommunityData(userId, onRequireLogin)
+  const notifications = useNotifications(userId)
   return (
     <div className="min-h-screen bg-bg text-ink">
       <div className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-line">
@@ -24,7 +28,17 @@ export default function App({ data, headerRight, badge, userId = null, onRequire
               </span>
             )}
           </div>
-          {headerRight}
+          <div className="flex items-center gap-2">
+            {userId && (
+              <NotificationBell
+                notifications={notifications.notifications}
+                unreadCount={notifications.unreadCount}
+                markAsRead={notifications.markAsRead}
+                markAllAsRead={notifications.markAllAsRead}
+              />
+            )}
+            {headerRight}
+          </div>
         </div>
       </div>
 
@@ -55,6 +69,17 @@ export default function App({ data, headerRight, badge, userId = null, onRequire
             <Route
               path="/community/u/:authorId"
               element={<AuthorPage userId={userId} onRequireLogin={onRequireLogin} />}
+            />
+            <Route
+              path="/community/notifications"
+              element={
+                <NotificationsPage
+                  notifications={notifications.notifications}
+                  loading={notifications.loading}
+                  markAsRead={notifications.markAsRead}
+                  markAllAsRead={notifications.markAllAsRead}
+                />
+              }
             />
             <Route path="*" element={<Navigate to="/calendar" replace />} />
           </Routes>

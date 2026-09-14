@@ -11,6 +11,19 @@ function AuthenticatedShell({ user, onSignOut }) {
   const data = useCoffeeData(user.id)
   const displayName = user.user_metadata?.full_name || user.email
   const avatarUrl = user.user_metadata?.avatar_url
+
+  // profiles.display_name/avatar_url is only seeded once at signup (by the
+  // handle_new_user trigger) — if the OAuth provider hadn't populated
+  // user_metadata yet at that moment, it's stuck null forever. Re-sync it
+  // from the live session on every login so it self-heals.
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .update({ display_name: displayName, avatar_url: avatarUrl || null })
+      .eq('user_id', user.id)
+      .then(({ error }) => error && console.error(error))
+  }, [user.id, displayName, avatarUrl])
+
   return (
     <App
       data={data}

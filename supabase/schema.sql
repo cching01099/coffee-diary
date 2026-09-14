@@ -87,6 +87,21 @@ create table public.post_replies (
 );
 create index post_replies_post_id_idx on public.post_replies (post_id, created_at);
 
+-- one row per like/reply someone else made on your post — populated only by
+-- the triggers below (not directly insertable), so notifications can't be
+-- spoofed by inserting a fake "so-and-so liked your post" row.
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references public.profiles(user_id) on delete cascade,
+  actor_id uuid not null references public.profiles(user_id) on delete cascade,
+  type text not null check (type in ('like', 'reply')),
+  post_id uuid not null references public.posts(id) on delete cascade,
+  reply_id uuid references public.post_replies(id) on delete cascade,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index notifications_recipient_idx on public.notifications (recipient_id, created_at desc);
+
 alter table public.entries enable row level security;
 alter table public.purchases enable row level security;
 alter table public.user_options enable row level security;
@@ -95,6 +110,7 @@ alter table public.profiles enable row level security;
 alter table public.posts enable row level security;
 alter table public.post_likes enable row level security;
 alter table public.post_replies enable row level security;
+alter table public.notifications enable row level security;
 
 create policy "own entries" on public.entries for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -123,6 +139,12 @@ create policy "replies are publicly readable" on public.post_replies for select 
 create policy "own replies insert" on public.post_replies for insert with check (auth.uid() = user_id);
 create policy "own replies delete" on public.post_replies for delete using (auth.uid() = user_id);
 
+-- notifications are private — only the recipient can see or mark them read.
+-- No insert policy: rows are only ever created by the trigger functions
+-- below, which run as security definer and bypass RLS.
+create policy "own notifications select" on public.notifications for select using (auth.uid() = recipient_id);
+create policy "own notifications update" on public.notifications for update using (auth.uid() = recipient_id);
+
 -- "Automatically expose new tables" was left off when the project was created,
 -- so the authenticated role needs these grants — RLS alone isn't enough,
 -- Postgres checks table-level GRANTs before it ever evaluates a row policy.
@@ -133,6 +155,7 @@ grant select, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.posts to authenticated;
 grant select, insert, delete on public.post_likes to authenticated;
 grant select, insert, delete on public.post_replies to authenticated;
+grant select, update on public.notifications to authenticated;
 
 -- the community forum is readable while signed out too
 grant select on public.profiles to anon;
@@ -168,6 +191,47 @@ insert into public.profiles (user_id, display_name, avatar_url)
 select id, raw_user_meta_data->>'full_name', raw_user_meta_data->>'avatar_url'
 from auth.users
 on conflict (user_id) do nothing;
+
+-- auto-create a notification when someone (other than the post's own
+-- author) likes or replies to a post — done via trigger rather than in
+-- application code so it can't be forgotten/bypassed from any client.
+-- Unliking doesn't retract the notification; that's an intentional
+-- simplification, same as most apps.
+create or replace function public.notify_on_like()
+returns trigger as $$
+declare
+  post_owner uuid;
+begin
+  select user_id into post_owner from public.posts where id = new.post_id;
+  if post_owner is distinct from new.user_id then
+    insert into public.notifications (recipient_id, actor_id, type, post_id)
+    values (post_owner, new.user_id, 'like', new.post_id);
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+create trigger on_post_like_created
+  after insert on public.post_likes
+  for each row execute function public.notify_on_like();
+
+create or replace function public.notify_on_reply()
+returns trigger as $$
+declare
+  post_owner uuid;
+begin
+  select user_id into post_owner from public.posts where id = new.post_id;
+  if post_owner is distinct from new.user_id then
+    insert into public.notifications (recipient_id, actor_id, type, post_id, reply_id)
+    values (post_owner, new.user_id, 'reply', new.post_id, new.id);
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+create trigger on_post_reply_created
+  after insert on public.post_replies
+  for each row execute function public.notify_on_reply();
 
 -- Storage: coffee-photos bucket, path format is "<user_id>/<filename>"
 create policy "users can upload their own coffee photos"

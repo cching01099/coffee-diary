@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { timeAgo } from '../lib/utils'
 import PostCard from '../components/PostCard'
 import ConfirmDialog from '../components/ConfirmDialog'
+import Avatar from '../components/Avatar'
 
 function mapPost(row) {
   return {
@@ -148,9 +149,15 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       ) : (
         replies.map((r) => (
           <div key={r.id} className="bg-card rounded-2xl border border-line p-3.5 mb-2">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-semibold text-[13px]">{r.authorName}</span>
-              <span className="text-[11px] text-ink-dim">{timeAgo(r.createdAt)}</span>
+            <div className="flex items-start gap-2.5 mb-1.5">
+              <button
+                onClick={() => navigate(`/community/u/${r.userId}`, { state: { fromApp: true } })}
+                className="flex items-center gap-2 min-w-0 flex-1 text-left"
+              >
+                <Avatar name={r.authorName} url={r.authorAvatar} />
+                <span className="font-semibold text-[13px] truncate">{r.authorName}</span>
+              </button>
+              <span className="text-[11px] text-ink-dim flex-shrink-0">{timeAgo(r.createdAt)}</span>
             </div>
             <p className="text-[14px] whitespace-pre-wrap">{r.content}</p>
           </div>
