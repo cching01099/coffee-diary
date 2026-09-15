@@ -132,6 +132,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } })}
         canDelete={userId && post.userId === userId}
         onDelete={() => setConfirmingDelete(true)}
+        compact={false}
       />
 
       <ConfirmDialog
@@ -164,29 +165,29 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
             </div>
           ))
         )}
-      </div>
 
-      <div className="sticky bottom-[76px] mt-4 bg-card rounded-2xl border border-line p-2.5 flex items-end gap-2">
-        <textarea
-          value={replyText}
-          onChange={(e) => setReplyText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleSendReply()
-            }
-          }}
-          placeholder="留下你的回覆..."
-          rows={1}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
-        />
-        <button
-          onClick={handleSendReply}
-          disabled={sending || !replyText.trim()}
-          className="px-3.5 py-1.5 bg-cta text-bg rounded-full font-semibold text-sm disabled:opacity-50"
-        >
-          送出
-        </button>
+        <div className="p-3 border-t border-line flex items-end gap-2">
+          <textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSendReply()
+              }
+            }}
+            placeholder="留下你的回覆..."
+            rows={1}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
+          />
+          <button
+            onClick={handleSendReply}
+            disabled={sending || !replyText.trim()}
+            className="px-3.5 py-1.5 bg-cta text-bg rounded-full font-semibold text-sm disabled:opacity-50"
+          >
+            送出
+          </button>
+        </div>
       </div>
     </div>
   )

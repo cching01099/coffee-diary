@@ -1,12 +1,26 @@
 import { useState } from 'react'
 import { timeAgo } from '../lib/utils'
 import Avatar from './Avatar'
+import PhotoLightbox from './PhotoLightbox'
 
-function PhotoCarousel({ photos }) {
+function PhotoCarousel({ photos, compact, onOpenLightbox }) {
   if (!photos || photos.length === 0) return null
+
   if (photos.length === 1) {
-    return <img src={photos[0]} alt="" loading="lazy" className="w-full max-h-96 object-cover rounded-xl mb-2.5" />
+    return (
+      <img
+        src={photos[0]}
+        alt=""
+        loading="lazy"
+        onClick={(e) => {
+          e.stopPropagation()
+          onOpenLightbox(0)
+        }}
+        className={`w-full ${compact ? 'max-h-64' : 'max-h-[32rem]'} object-cover rounded-xl mb-2.5 cursor-pointer`}
+      />
+    )
   }
+
   return (
     <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory rounded-xl mb-2.5 -mx-1 px-1 no-scrollbar">
       {photos.map((src, i) => (
@@ -15,7 +29,11 @@ function PhotoCarousel({ photos }) {
           src={src}
           alt=""
           loading="lazy"
-          className="w-[85%] flex-shrink-0 snap-center aspect-square object-cover rounded-xl"
+          onClick={(e) => {
+            e.stopPropagation()
+            onOpenLightbox(i)
+          }}
+          className={`${compact ? 'w-[60%]' : 'w-[85%]'} flex-shrink-0 snap-center aspect-square object-cover rounded-xl cursor-pointer`}
         />
       ))}
     </div>
@@ -33,8 +51,10 @@ export default function PostCard({
   canDelete,
   onDelete,
   hideAuthor,
+  compact = true,
 }) {
   const [copied, setCopied] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
 
   async function handleShare(e) {
     e.stopPropagation()
@@ -48,6 +68,18 @@ export default function PostCard({
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
+
+  // feed views show the (smaller, faster-loading) thumbnails; the detail
+  // view shows full-resolution photos. The lightbox always opens full-res,
+  // regardless of which one is on screen.
+  const displayPhotos = compact
+    ? post.photoThumbs?.length
+      ? post.photoThumbs
+      : post.photos
+    : post.photos?.length
+      ? post.photos
+      : post.photoThumbs
+  const fullPhotos = post.photos?.length ? post.photos : post.photoThumbs
 
   return (
     <div className="bg-card rounded-2xl border border-line p-4 mb-3">
@@ -78,7 +110,7 @@ export default function PostCard({
 
       <div onClick={() => onOpen(post.id)} className="cursor-pointer">
         {post.content && <p className="text-[14.5px] whitespace-pre-wrap mb-2.5">{post.content}</p>}
-        <PhotoCarousel photos={post.photoThumbs?.length ? post.photoThumbs : post.photos} />
+        <PhotoCarousel photos={displayPhotos} compact={compact} onOpenLightbox={setLightboxIndex} />
       </div>
 
       <div className="flex items-center gap-5 text-ink-dim text-[13px]">
@@ -95,6 +127,13 @@ export default function PostCard({
           <span>{copied ? '已複製連結' : '分享'}</span>
         </button>
       </div>
+
+      <PhotoLightbox
+        photos={fullPhotos}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={setLightboxIndex}
+      />
     </div>
   )
 }
