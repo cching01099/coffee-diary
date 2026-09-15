@@ -110,10 +110,14 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         },
       )
       .on(
+        // filter temporarily removed to check whether ANY insert on this
+        // table reaches the client at all, regardless of post_id match —
+        // narrows whether the `filter` expression itself is the problem
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'post_replies', filter: `post_id=eq.${postId}` },
+        { event: 'INSERT', schema: 'public', table: 'post_replies' },
         async (payload) => {
-          console.log('[realtime debug] post_replies INSERT', payload)
+          console.log('[realtime debug] post_replies INSERT (unfiltered)', payload)
+          if (payload.new.post_id !== postId) return
           if (ownReplyIdsRef.current.has(payload.new.id)) return
           const { data } = await supabase
             .from('profiles')
