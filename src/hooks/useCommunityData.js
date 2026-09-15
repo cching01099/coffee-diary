@@ -155,6 +155,13 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     setReplyCounts((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 0) + delta) }))
   }
 
+  // used by realtime subscriptions to reflect other people's likes without
+  // a refetch — the viewer's own likes go through toggleLike's optimistic
+  // update instead, so this is only ever called for someone else's action
+  function bumpLikeCount(postId, delta) {
+    setLikeCounts((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 0) + delta) }))
+  }
+
   return {
     posts,
     likeCounts,
@@ -166,5 +173,6 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     deletePost,
     toggleLike,
     bumpReplyCount,
+    bumpLikeCount,
   }
 }

@@ -34,7 +34,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const { postId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { posts, likeCounts, replyCounts, likedByMe, toggleLike, deletePost, bumpReplyCount } = community
+  const { posts, likeCounts, replyCounts, likedByMe, toggleLike, deletePost, bumpReplyCount, bumpLikeCount } = community
 
   const [post, setPost] = useState(() => posts.find((p) => p.id === postId) || null)
   const [replies, setReplies] = useState([])
@@ -77,6 +77,51 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId])
+
+  // live updates for likes/replies made by other people while this page is
+  // open — our own actions are already reflected via optimistic updates, so
+  // those are filtered out here to avoid double-counting
+  useEffect(() => {
+    const channel = supabase
+      .channel(`post-${postId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
+        (payload) => {
+          if (payload.new.user_id === userId) return
+          bumpLikeCount(postId, 1)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
+        (payload) => {
+          if (payload.old.user_id === userId) return
+          bumpLikeCount(postId, -1)
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'post_replies', filter: `post_id=eq.${postId}` },
+        async (payload) => {
+          if (payload.new.user_id === userId) return
+          const { data } = await supabase
+            .from('profiles')
+            .select('display_name, avatar_url')
+            .eq('user_id', payload.new.user_id)
+            .maybeSingle()
+          const reply = mapReply({ ...payload.new, profiles: data })
+          setReplies((prev) => (prev.some((r) => r.id === reply.id) ? prev : [...prev, reply]))
+          bumpReplyCount(postId, 1)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId, userId])
 
   async function handleSendReply() {
     if (!userId) return onRequireLogin()
