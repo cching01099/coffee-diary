@@ -16,7 +16,7 @@ function PhotoCarousel({ photos, compact, onOpenLightbox }) {
           e.stopPropagation()
           onOpenLightbox(0)
         }}
-        className={`w-full ${compact ? 'max-h-64' : 'max-h-[32rem]'} object-cover rounded-xl mb-2.5 cursor-pointer`}
+        className={`max-w-full ${compact ? 'max-h-64' : 'max-h-[32rem]'} rounded-xl mb-2.5 cursor-pointer`}
       />
     )
   }
@@ -33,7 +33,7 @@ function PhotoCarousel({ photos, compact, onOpenLightbox }) {
             e.stopPropagation()
             onOpenLightbox(i)
           }}
-          className={`${compact ? 'w-[60%]' : 'w-[85%]'} flex-shrink-0 snap-center aspect-square object-cover rounded-xl cursor-pointer`}
+          className={`${compact ? 'h-64' : 'h-96'} w-auto max-w-[85%] flex-shrink-0 snap-center rounded-xl cursor-pointer object-contain`}
         />
       ))}
     </div>
