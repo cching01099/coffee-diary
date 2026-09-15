@@ -163,6 +163,26 @@ grant select on public.posts to anon;
 grant select on public.post_likes to anon;
 grant select on public.post_replies to anon;
 
+-- "Automatically expose new tables" doesn't cover Realtime either — a table
+-- has to be explicitly added to this publication or postgres_changes
+-- subscribers (the post detail page's live like/reply updates) never
+-- receive anything for it, even though the subscribe() call itself succeeds.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'post_likes'
+  ) then
+    alter publication supabase_realtime add table public.post_likes;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'post_replies'
+  ) then
+    alter publication supabase_realtime add table public.post_replies;
+  end if;
+end $$;
+
 -- service_role bypasses RLS but still needs the same table-level GRANT —
 -- required by one-off maintenance scripts (e.g. scripts/backfill-photo-thumbs.mjs)
 -- and by api/line-auth-callback.js, which both use the service role key

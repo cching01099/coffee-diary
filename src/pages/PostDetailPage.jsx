@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { timeAgo } from '../lib/utils'
@@ -34,7 +34,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const { postId } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { posts, likeCounts, replyCounts, likedByMe, toggleLike, deletePost, bumpReplyCount, bumpLikeCount } = community
+  const { posts, likeCounts, replyCounts, likedByMe, toggleLike, deletePost, bumpReplyCount, bumpLikeCount, isOwnLikeAction } = community
 
   const [post, setPost] = useState(() => posts.find((p) => p.id === postId) || null)
   const [replies, setReplies] = useState([])
@@ -42,6 +42,12 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const [replyText, setReplyText] = useState('')
   const [sending, setSending] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // reply ids this tab itself just submitted — lets the realtime INSERT
+  // echo for that exact reply be skipped by id instead of by author, so
+  // the same account's other open tabs/devices still pick it up (see
+  // ownLikeActionRef in useCommunityData for the same problem with likes)
+  const ownReplyIdsRef = useRef(new Set())
 
   useEffect(() => {
     let cancelled = false
@@ -78,9 +84,10 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId])
 
-  // live updates for likes/replies made by other people while this page is
-  // open — our own actions are already reflected via optimistic updates, so
-  // those are filtered out here to avoid double-counting
+  // live updates for likes/replies while this page is open — the exact
+  // action this tab itself just took is filtered out (tracked by id/postId
+  // above) since it's already reflected via its own optimistic update;
+  // everything else, including the same account's other tabs, gets applied
   useEffect(() => {
     const channel = supabase
       .channel(`post-${postId}`)
@@ -88,7 +95,8 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
         (payload) => {
-          if (payload.new.user_id === userId) return
+          console.log('[realtime debug] post_likes INSERT', payload)
+          if (isOwnLikeAction(postId)) return
           bumpLikeCount(postId, 1)
         },
       )
@@ -96,7 +104,8 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
         (payload) => {
-          if (payload.old.user_id === userId) return
+          console.log('[realtime debug] post_likes DELETE', payload)
+          if (isOwnLikeAction(postId)) return
           bumpLikeCount(postId, -1)
         },
       )
@@ -104,7 +113,8 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'post_replies', filter: `post_id=eq.${postId}` },
         async (payload) => {
-          if (payload.new.user_id === userId) return
+          console.log('[realtime debug] post_replies INSERT', payload)
+          if (ownReplyIdsRef.current.has(payload.new.id)) return
           const { data } = await supabase
             .from('profiles')
             .select('display_name, avatar_url')
@@ -115,7 +125,9 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
           bumpReplyCount(postId, 1)
         },
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log('[realtime debug] channel status', postId, status, err)
+      })
 
     return () => {
       supabase.removeChannel(channel)
@@ -128,9 +140,14 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     const text = replyText.trim()
     if (!text) return
     setSending(true)
+    // generated up front (rather than reading the id supabase would
+    // otherwise assign) so it's already in ownReplyIdsRef before the
+    // realtime echo of this insert can possibly arrive
+    const id = crypto.randomUUID()
+    ownReplyIdsRef.current.add(id)
     const { data, error } = await supabase
       .from('post_replies')
-      .insert({ post_id: postId, user_id: userId, content: text })
+      .insert({ id, post_id: postId, user_id: userId, content: text })
       .select('*, profiles(display_name, avatar_url)')
       .single()
     setSending(false)

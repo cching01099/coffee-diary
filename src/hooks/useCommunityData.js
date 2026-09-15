@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadPhotoPair, removePhotos } from '../lib/storagePhotos'
 
@@ -27,6 +27,14 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
   const [likedByMe, setLikedByMe] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // postIds this exact tab just toggled a like on, kept briefly so a
+  // realtime echo of that same write (which also reaches this tab) doesn't
+  // double-count on top of the optimistic update below. Keyed by postId
+  // only — matching by the acting user_id would also swallow events from
+  // the same account's OTHER open tabs/devices, which never applied the
+  // optimistic update and still need the bump.
+  const ownLikeActionRef = useRef(new Set())
 
   useEffect(() => {
     let cancelled = false
@@ -128,6 +136,9 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     if (!userId) return onRequireLogin()
     const currentlyLiked = likedByMe.has(postId)
 
+    ownLikeActionRef.current.add(postId)
+    setTimeout(() => ownLikeActionRef.current.delete(postId), 3000)
+
     setLikedByMe((prev) => {
       const next = new Set(prev)
       currentlyLiked ? next.delete(postId) : next.add(postId)
@@ -155,6 +166,12 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     setReplyCounts((prev) => ({ ...prev, [postId]: Math.max(0, (prev[postId] || 0) + delta) }))
   }
 
+  // true only for the few seconds right after this tab itself toggled a
+  // like on postId — see ownLikeActionRef above.
+  function isOwnLikeAction(postId) {
+    return ownLikeActionRef.current.has(postId)
+  }
+
   // used by realtime subscriptions to reflect other people's likes without
   // a refetch — the viewer's own likes go through toggleLike's optimistic
   // update instead, so this is only ever called for someone else's action
@@ -174,5 +191,6 @@ export function useCommunityData(userId, onRequireLogin, authorId = null) {
     toggleLike,
     bumpReplyCount,
     bumpLikeCount,
+    isOwnLikeAction,
   }
 }
