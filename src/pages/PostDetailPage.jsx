@@ -89,25 +89,12 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   // above) since it's already reflected via its own optimistic update;
   // everything else, including the same account's other tabs, gets applied
   useEffect(() => {
-    supabase.auth.getSession().then(({ data, error }) => {
-      console.log(
-        '[realtime debug] session at subscribe time',
-        data.session?.user?.id,
-        'expires_at',
-        data.session?.expires_at,
-        'now',
-        Math.floor(Date.now() / 1000),
-        error,
-      )
-    })
-
     const channel = supabase
       .channel(`post-${postId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
-        (payload) => {
-          console.log('[realtime debug] post_likes INSERT', payload)
+        () => {
           if (isOwnLikeAction(postId)) return
           bumpLikeCount(postId, 1)
         },
@@ -115,21 +102,15 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'post_likes', filter: `post_id=eq.${postId}` },
-        (payload) => {
-          console.log('[realtime debug] post_likes DELETE', payload)
+        () => {
           if (isOwnLikeAction(postId)) return
           bumpLikeCount(postId, -1)
         },
       )
       .on(
-        // filter temporarily removed to check whether ANY insert on this
-        // table reaches the client at all, regardless of post_id match —
-        // narrows whether the `filter` expression itself is the problem
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'post_replies' },
+        { event: 'INSERT', schema: 'public', table: 'post_replies', filter: `post_id=eq.${postId}` },
         async (payload) => {
-          console.log('[realtime debug] post_replies INSERT (unfiltered)', payload)
-          if (payload.new.post_id !== postId) return
           if (ownReplyIdsRef.current.has(payload.new.id)) return
           const { data } = await supabase
             .from('profiles')
@@ -141,9 +122,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
           bumpReplyCount(postId, 1)
         },
       )
-      .subscribe((status, err) => {
-        console.log('[realtime debug] channel status', postId, status, err)
-      })
+      .subscribe()
 
     return () => {
       supabase.removeChannel(channel)

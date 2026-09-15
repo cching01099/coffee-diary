@@ -183,6 +183,19 @@ begin
   end if;
 end $$;
 
+-- Gotcha hit in production: this table was already a member of the
+-- publication per pg_publication_tables (and the Dashboard toggle showed
+-- it on), yet postgres_changes delivered literally nothing — not even
+-- unfiltered, not even for a raw SQL insert bypassing the app entirely —
+-- while the channel itself still reported SUBSCRIBED. The Realtime
+-- service's own tenant process apparently had a stale view of the
+-- publication. Fix was to force it to reload by dropping and re-adding
+-- the table:
+--   alter publication supabase_realtime drop table public.post_replies;
+--   alter publication supabase_realtime add table public.post_replies;
+-- If that alone doesn't get events flowing again, restart the project
+-- (Dashboard → Project Settings → General → Restart project).
+
 -- service_role bypasses RLS but still needs the same table-level GRANT —
 -- required by one-off maintenance scripts (e.g. scripts/backfill-photo-thumbs.mjs)
 -- and by api/line-auth-callback.js, which both use the service role key
