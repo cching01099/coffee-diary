@@ -1,6 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+
+const SWIPE_THRESHOLD = 40
 
 export default function PhotoLightbox({ photos, index, onClose, onNavigate }) {
+  const dragStartX = useRef(null)
+
   useEffect(() => {
     if (index == null) return
     function handleKey(e) {
@@ -46,8 +50,21 @@ export default function PhotoLightbox({ photos, index, onClose, onNavigate }) {
       <img
         src={photos[index]}
         alt=""
+        draggable={false}
         className="max-w-full max-h-full object-contain"
+        style={{ touchAction: 'pan-y' }}
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          dragStartX.current = e.clientX
+        }}
+        onPointerUp={(e) => {
+          if (dragStartX.current == null) return
+          const delta = e.clientX - dragStartX.current
+          dragStartX.current = null
+          if (Math.abs(delta) < SWIPE_THRESHOLD) return
+          if (delta < 0 && index < photos.length - 1) onNavigate(index + 1)
+          else if (delta > 0 && index > 0) onNavigate(index - 1)
+        }}
       />
 
       {photos.length > 1 && (
