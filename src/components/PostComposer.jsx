@@ -3,6 +3,14 @@ import { compressImage } from '../lib/utils'
 
 const MAX_PHOTOS = 5
 
+// grows the textarea to fit its content instead of leaving a fixed-height
+// box with empty space below whatever's been typed
+function autoGrow(el) {
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+
 export default function PostComposer({ isOpen, onClose, onSubmit }) {
   const [content, setContent] = useState('')
   const [photos, setPhotos] = useState([])
@@ -10,6 +18,7 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
   const [compressing, setCompressing] = useState(false)
   const [posting, setPosting] = useState(false)
   const inputRef = useRef(null)
+  const textareaRef = useRef(null)
 
   if (!isOpen) return null
 
@@ -17,6 +26,7 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
     setContent('')
     setPhotos([])
     setPhotoThumbs([])
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }
 
   function handleClose() {
@@ -84,12 +94,17 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
           </button>
         </div>
 
-        <div className="px-5 pt-5">
+        <div className="px-5 pt-5 min-h-[45vh]">
           <textarea
+            ref={textareaRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value)
+              autoGrow(e.target)
+            }}
+            rows={1}
             placeholder="分享你的拉花心得，或提出一個問題..."
-            className="w-full min-h-[33vh] bg-transparent text-[15px] placeholder:text-ink-dim/60 resize-y outline-none"
+            className="w-full bg-transparent text-base placeholder:text-ink-dim/60 resize-none outline-none overflow-hidden"
           />
           {photos.length > 0 && (
             <div className="flex gap-2 overflow-x-auto no-scrollbar mb-2">
@@ -109,11 +124,19 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
           <button
             onClick={() => inputRef.current?.click()}
             disabled={compressing || photos.length >= MAX_PHOTOS}
-            className="text-lg px-2 py-1 text-ink-dim disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line text-sm text-ink-dim disabled:opacity-50 mt-2"
           >
-            {compressing ? '處理中...' : '📷'}
+            <span>📷</span>
+            <span>{compressing ? '處理中...' : '新增照片'}</span>
           </button>
-          <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFiles}
+            className="absolute w-px h-px opacity-0 overflow-hidden"
+          />
         </div>
       </div>
     </div>
