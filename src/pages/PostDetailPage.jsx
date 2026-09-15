@@ -89,6 +89,18 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   // above) since it's already reflected via its own optimistic update;
   // everything else, including the same account's other tabs, gets applied
   useEffect(() => {
+    supabase.auth.getSession().then(({ data, error }) => {
+      console.log(
+        '[realtime debug] session at subscribe time',
+        data.session?.user?.id,
+        'expires_at',
+        data.session?.expires_at,
+        'now',
+        Math.floor(Date.now() / 1000),
+        error,
+      )
+    })
+
     const channel = supabase
       .channel(`post-${postId}`)
       .on(
