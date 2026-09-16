@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCommunityData } from '../hooks/useCommunityData'
 import PostCard from '../components/PostCard'
@@ -8,7 +8,6 @@ import ConfirmDialog from '../components/ConfirmDialog'
 export default function AuthorPage({ userId, onRequireLogin }) {
   const { authorId } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const author = useCommunityData(userId, onRequireLogin, authorId)
   const [profile, setProfile] = useState(null)
   const [deleteTargetId, setDeleteTargetId] = useState(null)
@@ -38,15 +37,10 @@ export default function AuthorPage({ userId, onRequireLogin }) {
   const displayName = profile?.display_name || author.posts[0]?.authorName || '匿名咖啡愛好者'
   const avatarUrl = profile?.avatar_url || author.posts[0]?.authorAvatar || null
 
-  function handleBack() {
-    if (location.state?.fromApp) navigate(-1)
-    else navigate('/community')
-  }
-
   return (
     <div>
-      <button onClick={handleBack} className="mb-6 text-ink-dim text-sm">
-        ‹ 返回
+      <button onClick={() => navigate('/community')} className="mb-6 text-ink-dim text-sm">
+        ‹ 返回社群
       </button>
 
       <div className="flex items-center gap-3 pb-5 mb-5 border-b border-line">
@@ -78,8 +72,8 @@ export default function AuthorPage({ userId, onRequireLogin }) {
             likeCount={author.likeCounts[post.id]}
             replyCount={author.replyCounts[post.id]}
             onToggleLike={author.toggleLike}
-            onOpen={(id) => navigate(`/community/post/${id}`, { state: { fromApp: true } })}
-            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } })}
+            onOpen={(id) => navigate(`/community/post/${id}`)}
+            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`)}
             canDelete={userId && post.userId === userId}
             onDelete={setDeleteTargetId}
           />

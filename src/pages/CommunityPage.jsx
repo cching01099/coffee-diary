@@ -46,8 +46,8 @@ export default function CommunityPage({ community, userId }) {
             likeCount={likeCounts[post.id]}
             replyCount={replyCounts[post.id]}
             onToggleLike={toggleLike}
-            onOpen={(id) => navigate(`/community/post/${id}`, { state: { fromApp: true } })}
-            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } })}
+            onOpen={(id) => navigate(`/community/post/${id}`)}
+            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`)}
             canDelete={userId && post.userId === userId}
             onDelete={setDeleteTargetId}
           />

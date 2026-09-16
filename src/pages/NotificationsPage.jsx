@@ -18,13 +18,13 @@ export default function NotificationsPage({ notifications, loading, markAsRead, 
 
   function handleClick(n) {
     if (!n.read) markAsRead(n.id)
-    navigate(`/community/post/${n.postId}`, { state: { fromApp: true } })
+    navigate(`/community/post/${n.postId}`)
   }
 
   return (
     <div>
       <button onClick={() => navigate('/community')} className="mb-4 text-ink-dim text-sm">
-        ‹ 返回
+        ‹ 返回社群
       </button>
       <h1 className="font-bold text-2xl mb-4">通知</h1>
 

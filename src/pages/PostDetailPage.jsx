@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { autoGrow, timeAgo } from '../lib/utils'
 import PostCard from '../components/PostCard'
@@ -65,7 +65,6 @@ function renderMentionContent(content, onMentionClick) {
 export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const { postId } = useParams()
   const navigate = useNavigate()
-  const location = useLocation()
   const { posts, likeCounts, replyCounts, likedByMe, toggleLike, deletePost, bumpReplyCount, bumpLikeCount, isOwnLikeAction } = community
 
   const [post, setPost] = useState(() => posts.find((p) => p.id === postId) || null)
@@ -293,15 +292,10 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   if (loading) return <div className="text-center py-10 text-ink-dim text-sm">載入中...</div>
   if (!post) return <div className="text-center py-10 text-ink-dim text-sm">找不到這篇貼文</div>
 
-  function handleBack() {
-    if (location.state?.fromApp) navigate(-1)
-    else navigate('/community')
-  }
-
   return (
     <div>
-      <button onClick={handleBack} className="mb-4 text-ink-dim text-sm">
-        ‹ 返回
+      <button onClick={() => navigate('/community')} className="mb-4 text-ink-dim text-sm">
+        ‹ 返回社群
       </button>
 
       <PostCard
@@ -311,7 +305,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         replyCount={replyCounts[post.id]}
         onToggleLike={toggleLike}
         onOpen={() => {}}
-        onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } })}
+        onOpenAuthor={(uid) => navigate(`/community/u/${uid}`)}
         canDelete={userId && post.userId === userId}
         onDelete={() => setConfirmingDelete(true)}
         compact={false}
@@ -334,7 +328,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
           replies.map((r, i) => (
             <div key={r.id} className={`p-3.5 ${i !== replies.length - 1 ? 'border-b border-line' : ''}`}>
               <button
-                onClick={() => navigate(`/community/u/${r.userId}`, { state: { fromApp: true } })}
+                onClick={() => navigate(`/community/u/${r.userId}`)}
                 className="flex items-start gap-2.5 min-w-0 w-full text-left mb-1.5"
               >
                 <Avatar name={r.authorName} url={r.authorAvatar} />
@@ -344,7 +338,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
                 </div>
               </button>
               <p className="text-[14px] whitespace-pre-wrap">
-                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } }))}
+                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`))}
               </p>
             </div>
           ))
