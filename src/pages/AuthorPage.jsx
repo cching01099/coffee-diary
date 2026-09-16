@@ -39,7 +39,7 @@ export default function AuthorPage({ userId, onRequireLogin }) {
 
   return (
     <div>
-      <button onClick={() => navigate('/community')} className="mb-6 text-ink-dim text-sm">
+      <button onClick={() => navigate('/community', { viewTransition: true })} className="mb-6 text-ink-dim text-sm">
         ‹ 返回社群
       </button>
 
@@ -72,8 +72,8 @@ export default function AuthorPage({ userId, onRequireLogin }) {
             likeCount={author.likeCounts[post.id]}
             replyCount={author.replyCounts[post.id]}
             onToggleLike={author.toggleLike}
-            onOpen={(id) => navigate(`/community/post/${id}`)}
-            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`)}
+            onOpen={(id) => navigate(`/community/post/${id}`, { viewTransition: true })}
+            onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { viewTransition: true })}
             canDelete={userId && post.userId === userId}
             onDelete={setDeleteTargetId}
           />

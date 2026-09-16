@@ -20,7 +20,7 @@ export default function NotificationBell({ notifications, unreadCount, markAsRea
   function handleClick(n) {
     setOpen(false)
     if (!n.read) markAsRead(n.id)
-    navigate(`/community/post/${n.postId}`)
+    navigate(`/community/post/${n.postId}`, { viewTransition: true })
   }
 
   return (
@@ -58,7 +58,7 @@ export default function NotificationBell({ notifications, unreadCount, markAsRea
             <button
               onClick={() => {
                 setOpen(false)
-                navigate('/community/notifications')
+                navigate('/community/notifications', { viewTransition: true })
               }}
               className="w-full text-center py-2.5 text-sm text-accent font-medium border-t border-line"
             >

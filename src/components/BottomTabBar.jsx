@@ -39,6 +39,7 @@ export default function BottomTabBar() {
           <NavLink
             key={t.path}
             to={t.path}
+            viewTransition
             className={({ isActive }) =>
               `text-xl w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
                 isActive ? 'bg-accent/15' : ''

@@ -95,7 +95,7 @@ export default function AuthGate() {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    navigate('/')
+    navigate('/', { viewTransition: true })
   }
 
   return (

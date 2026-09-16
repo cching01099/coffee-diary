@@ -286,7 +286,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       alert(`刪除失敗：${err.message}`)
       return
     }
-    navigate('/community')
+    navigate('/community', { viewTransition: true })
   }
 
   if (loading) return <div className="text-center py-10 text-ink-dim text-sm">載入中...</div>
@@ -294,7 +294,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
 
   return (
     <div>
-      <button onClick={() => navigate('/community')} className="mb-4 text-ink-dim text-sm">
+      <button onClick={() => navigate('/community', { viewTransition: true })} className="mb-4 text-ink-dim text-sm">
         ‹ 返回社群
       </button>
 
@@ -305,7 +305,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
         replyCount={replyCounts[post.id]}
         onToggleLike={toggleLike}
         onOpen={() => {}}
-        onOpenAuthor={(uid) => navigate(`/community/u/${uid}`)}
+        onOpenAuthor={(uid) => navigate(`/community/u/${uid}`, { viewTransition: true })}
         canDelete={userId && post.userId === userId}
         onDelete={() => setConfirmingDelete(true)}
         compact={false}
@@ -328,7 +328,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
           replies.map((r, i) => (
             <div key={r.id} className={`p-3.5 ${i !== replies.length - 1 ? 'border-b border-line' : ''}`}>
               <button
-                onClick={() => navigate(`/community/u/${r.userId}`)}
+                onClick={() => navigate(`/community/u/${r.userId}`, { viewTransition: true })}
                 className="flex items-start gap-2.5 min-w-0 w-full text-left mb-1.5"
               >
                 <Avatar name={r.authorName} url={r.authorAvatar} />
@@ -338,7 +338,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
                 </div>
               </button>
               <p className="text-[14px] whitespace-pre-wrap">
-                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`))}
+                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`, { viewTransition: true }))}
               </p>
             </div>
           ))

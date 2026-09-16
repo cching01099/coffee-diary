@@ -26,3 +26,19 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* page-to-page navigation (react-router's viewTransition prop) — keep the
+   browser's default cross-fade, just match its timing to .fade-in above so
+   the two forms of transition in the app feel the same */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.25s;
+  animation-timing-function: ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

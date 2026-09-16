@@ -20,7 +20,7 @@ export default function App({ data, headerRight, badge, userId = null, onRequire
         <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">
-              <Link to="/calendar">☕ Pourista</Link>
+              <Link to="/calendar" viewTransition>☕ Pourista</Link>
             </h1>
             {badge && (
               <span className="text-[10px] text-ink-dim border border-line rounded-full px-2 py-0.5">
