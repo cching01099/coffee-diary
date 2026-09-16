@@ -1,15 +1,7 @@
 import { useRef, useState } from 'react'
-import { compressImage } from '../lib/utils'
+import { autoGrow, compressImage } from '../lib/utils'
 
 const MAX_PHOTOS = 5
-
-// grows the textarea to fit its content instead of leaving a fixed-height
-// box with empty space below whatever's been typed
-function autoGrow(el) {
-  if (!el) return
-  el.style.height = 'auto'
-  el.style.height = `${el.scrollHeight}px`
-}
 
 export default function PostComposer({ isOpen, onClose, onSubmit }) {
   const [content, setContent] = useState('')

@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { timeAgo } from '../lib/utils'
+import { autoGrow, timeAgo } from '../lib/utils'
 import PostCard from '../components/PostCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Avatar from '../components/Avatar'
@@ -30,6 +30,38 @@ function mapReply(row) {
   }
 }
 
+// mentions are stored inline in reply content as `@[Display Name](user_id)`
+// — matches what the notify_on_mention trigger in schema.sql parses, so a
+// reply's stored text is the single source of truth for who got tagged
+const MENTION_PATTERN =
+  /@\[([^\]]+)\]\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/g
+
+function renderMentionContent(content, onMentionClick) {
+  const parts = []
+  let lastIndex = 0
+  let match
+  MENTION_PATTERN.lastIndex = 0
+  while ((match = MENTION_PATTERN.exec(content))) {
+    if (match.index > lastIndex) parts.push(content.slice(lastIndex, match.index))
+    const [full, name, uid] = match
+    parts.push(
+      <button
+        key={match.index}
+        onClick={(e) => {
+          e.stopPropagation()
+          onMentionClick(uid)
+        }}
+        className="inline text-accent font-medium"
+      >
+        @{name}
+      </button>,
+    )
+    lastIndex = match.index + full.length
+  }
+  if (lastIndex < content.length) parts.push(content.slice(lastIndex))
+  return parts
+}
+
 export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const { postId } = useParams()
   const navigate = useNavigate()
@@ -38,16 +70,46 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
 
   const [post, setPost] = useState(() => posts.find((p) => p.id === postId) || null)
   const [replies, setReplies] = useState([])
+  const [likers, setLikers] = useState([])
   const [loading, setLoading] = useState(!post)
   const [replyText, setReplyText] = useState('')
   const [sending, setSending] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // @mention composing state: mentionQuery is the text typed after the "@"
+  // that triggered the dropdown (null when not composing one), mentionStart
+  // is that "@"'s index in replyText, and activeMentions records the
+  // {name, userId} pairs picked so far so handleSendReply can turn the
+  // plain "@Name" text the user sees into the storable markup
+  const [mentionQuery, setMentionQuery] = useState(null)
+  const [mentionStart, setMentionStart] = useState(null)
+  const [activeMentions, setActiveMentions] = useState([])
+  const textareaRef = useRef(null)
 
   // reply ids this tab itself just submitted — lets the realtime INSERT
   // echo for that exact reply be skipped by id instead of by author, so
   // the same account's other open tabs/devices still pick it up (see
   // ownLikeActionRef in useCommunityData for the same problem with likes)
   const ownReplyIdsRef = useRef(new Set())
+
+  // who can be @mentioned: anyone who's replied or liked this post, since
+  // they're already part of the conversation — not the whole user base
+  const mentionCandidates = useMemo(() => {
+    const byId = new Map()
+    for (const r of replies) {
+      if (r.userId !== userId) byId.set(r.userId, { userId: r.userId, name: r.authorName, avatar: r.authorAvatar })
+    }
+    for (const l of likers) {
+      if (l.userId !== userId) byId.set(l.userId, l)
+    }
+    return [...byId.values()]
+  }, [replies, likers, userId])
+
+  const filteredMentionCandidates = useMemo(() => {
+    if (mentionQuery == null) return []
+    const q = mentionQuery.toLowerCase()
+    return mentionCandidates.filter((c) => c.name.toLowerCase().includes(q))
+  }, [mentionCandidates, mentionQuery])
 
   useEffect(() => {
     let cancelled = false
@@ -75,6 +137,27 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       if (!cancelled) {
         if (!replyError) setReplies((replyRows || []).map(mapReply))
         setLoading(false)
+      }
+
+      // post_likes.user_id references auth.users directly (not profiles),
+      // so PostgREST can't embed profile info in one query here — fetch
+      // the liker ids, then their profiles, separately
+      const { data: likeRows } = await supabase.from('post_likes').select('user_id').eq('post_id', postId)
+      const likerIds = [...new Set((likeRows || []).map((r) => r.user_id))]
+      if (likerIds.length && !cancelled) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', likerIds)
+        if (!cancelled) {
+          setLikers(
+            (profileRows || []).map((p) => ({
+              userId: p.user_id,
+              name: p.display_name || '匿名咖啡愛好者',
+              avatar: p.avatar_url || null,
+            })),
+          )
+        }
       }
     }
     load()
@@ -132,8 +215,14 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
 
   async function handleSendReply() {
     if (!userId) return onRequireLogin()
-    const text = replyText.trim()
+    let text = replyText.trim()
     if (!text) return
+    // turn the plain "@Name" text the user sees into the `@[Name](uuid)`
+    // markup that gets stored and parsed by both the renderer and the
+    // notify_on_mention trigger
+    for (const { name, userId: mentionedId } of activeMentions) {
+      text = text.split(`@${name}`).join(`@[${name}](${mentionedId})`)
+    }
     setSending(true)
     // generated up front (rather than reading the id supabase would
     // otherwise assign) so it's already in ownReplyIdsRef before the
@@ -153,6 +242,42 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     setReplies((prev) => [...prev, mapReply(data)])
     bumpReplyCount(postId, 1)
     setReplyText('')
+    setActiveMentions([])
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+  }
+
+  function handleReplyTextChange(e) {
+    const value = e.target.value
+    setReplyText(value)
+    autoGrow(e.target)
+    const cursor = e.target.selectionStart
+    const atMatch = value.slice(0, cursor).match(/(?:^|\s)@([^\s@]*)$/)
+    if (atMatch) {
+      setMentionQuery(atMatch[1])
+      setMentionStart(cursor - atMatch[1].length - 1)
+    } else {
+      setMentionQuery(null)
+      setMentionStart(null)
+    }
+  }
+
+  function insertMention(candidate) {
+    const el = textareaRef.current
+    if (mentionStart == null || !el) return
+    const cursor = el.selectionStart
+    const before = replyText.slice(0, mentionStart)
+    const after = replyText.slice(cursor)
+    const inserted = `@${candidate.name} `
+    setReplyText(before + inserted + after)
+    setActiveMentions((prev) => (prev.some((m) => m.name === candidate.name) ? prev : [...prev, { name: candidate.name, userId: candidate.userId }]))
+    setMentionQuery(null)
+    setMentionStart(null)
+    requestAnimationFrame(() => {
+      const pos = before.length + inserted.length
+      el.focus()
+      el.setSelectionRange(pos, pos)
+      autoGrow(el)
+    })
   }
 
   async function handleConfirmDelete() {
@@ -218,22 +343,39 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
                   <div className="text-[11px] text-ink-dim">{timeAgo(r.createdAt)}</div>
                 </div>
               </button>
-              <p className="text-[14px] whitespace-pre-wrap">{r.content}</p>
+              <p className="text-[14px] whitespace-pre-wrap">
+                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`, { state: { fromApp: true } }))}
+              </p>
             </div>
           ))
         )}
 
-        <div className="p-3 border-t border-line flex items-end gap-2">
+        <div className="relative p-3 border-t border-line flex items-end gap-2">
+          {filteredMentionCandidates.length > 0 && (
+            <div className="absolute bottom-full left-3 right-3 mb-1 bg-card border border-line rounded-xl shadow-lg max-h-48 overflow-y-auto z-10">
+              {filteredMentionCandidates.map((c) => (
+                <button
+                  key={c.userId}
+                  onClick={() => insertMention(c)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-ink/5"
+                >
+                  <Avatar name={c.name} url={c.avatar} />
+                  <span className="text-[13px] font-medium">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
+            ref={textareaRef}
             value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
+            onChange={handleReplyTextChange}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                handleSendReply()
+                if (mentionQuery == null) handleSendReply()
               }
             }}
-            placeholder="留下你的回覆..."
+            placeholder="留下你的回覆...（輸入@可標記）"
             rows={1}
             className="flex-1 bg-transparent text-base outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
           />

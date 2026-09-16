@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { timeAgo } from '../lib/utils'
 
 function notificationText(n) {
-  return n.type === 'like' ? `${n.actorName} 對你的貼文按了讚` : `${n.actorName} 回覆了你的貼文`
+  if (n.type === 'like') return `${n.actorName} 對你的貼文按了讚`
+  if (n.type === 'mention') return `${n.actorName} 在留言中標記了你`
+  return `${n.actorName} 回覆了你的貼文`
 }
 
 export default function NotificationBell({ notifications, unreadCount, markAsRead, markAllAsRead }) {

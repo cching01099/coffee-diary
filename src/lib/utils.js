@@ -75,6 +75,14 @@ export function compressImage(file, { maxDimension = 1280, quality = 0.8 } = {})
   })
 }
 
+// grows a textarea to fit its content instead of leaving a fixed-height
+// box with empty space below whatever's been typed (or clipping it)
+export function autoGrow(el) {
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight}px`
+}
+
 export function timeAgo(isoString) {
   const seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000)
   if (seconds < 60) return '剛剛'

@@ -83,26 +83,32 @@ export default function PostCard({
 
   return (
     <div className="bg-card rounded-2xl border border-line p-4 mb-3">
-      <div className="flex items-start gap-2.5 mb-2.5">
+      <div onClick={() => onOpen(post.id)} className="flex items-start justify-between gap-2 mb-2.5 cursor-pointer">
         {hideAuthor ? (
-          <div className="text-[11px] text-ink-dim flex-1">{timeAgo(post.createdAt)}</div>
+          <div className="text-[11px] text-ink-dim">{timeAgo(post.createdAt)}</div>
         ) : (
           <button
             onClick={(e) => {
               e.stopPropagation()
               onOpenAuthor?.(post.userId)
             }}
-            className="flex items-start gap-2.5 min-w-0 flex-1 text-left"
+            className="flex items-start gap-2.5 min-w-0 max-w-[80%] text-left"
           >
             <Avatar name={post.authorName} url={post.authorAvatar} />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0">
               <div className="font-semibold text-[14px] truncate">{post.authorName}</div>
               <div className="text-[11px] text-ink-dim">{timeAgo(post.createdAt)}</div>
             </div>
           </button>
         )}
         {canDelete && (
-          <button onClick={() => onDelete(post.id)} className="text-ink-dim text-xs px-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(post.id)
+            }}
+            className="text-ink-dim text-xs px-1 flex-shrink-0"
+          >
             刪除
           </button>
         )}

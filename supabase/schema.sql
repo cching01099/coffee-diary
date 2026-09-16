@@ -94,7 +94,7 @@ create table public.notifications (
   id uuid primary key default gen_random_uuid(),
   recipient_id uuid not null references public.profiles(user_id) on delete cascade,
   actor_id uuid not null references public.profiles(user_id) on delete cascade,
-  type text not null check (type in ('like', 'reply')),
+  type text not null check (type in ('like', 'reply', 'mention')),
   post_id uuid not null references public.posts(id) on delete cascade,
   reply_id uuid references public.post_replies(id) on delete cascade,
   read boolean not null default false,
@@ -265,6 +265,39 @@ $$ language plpgsql security definer set search_path = public;
 create trigger on_post_reply_created
   after insert on public.post_replies
   for each row execute function public.notify_on_reply();
+
+-- @mentions are stored inline in reply content as `@[Display Name](user_id)`
+-- (the composer inserts this; plain "@[...]" markers a user might type by
+-- hand just render as literal text since the parenthesized part won't be a
+-- real profile's uuid). Parsed here rather than from a separate mentions
+-- table so there's one source of truth for what a reply actually says.
+create or replace function public.notify_on_mention()
+returns trigger as $$
+declare
+  mentioned_id uuid;
+begin
+  for mentioned_id in
+    select distinct (m[1])::uuid
+    from regexp_matches(
+      new.content,
+      '@\[[^\]]+\]\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)',
+      'g'
+    ) as m
+  loop
+    if mentioned_id is distinct from new.user_id
+       and exists (select 1 from public.profiles where user_id = mentioned_id)
+    then
+      insert into public.notifications (recipient_id, actor_id, type, post_id, reply_id)
+      values (mentioned_id, new.user_id, 'mention', new.post_id, new.id);
+    end if;
+  end loop;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+create trigger on_post_reply_mention
+  after insert on public.post_replies
+  for each row execute function public.notify_on_mention();
 
 -- Storage: coffee-photos bucket, path format is "<user_id>/<filename>"
 -- Select is required even though the bucket is public — public only lets
