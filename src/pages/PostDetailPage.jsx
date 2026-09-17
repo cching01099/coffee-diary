@@ -460,7 +460,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
                   if (mentionQuery == null) handleSendReply()
                 }
               }}
-              placeholder="留下你的回覆...（輸入@可標記）"
+              placeholder="新增回覆..."
               rows={1}
               className="flex-1 bg-transparent text-base outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
             />
