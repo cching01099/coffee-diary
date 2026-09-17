@@ -82,7 +82,9 @@ create table public.post_replies (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references public.posts(id) on delete cascade,
   user_id uuid not null references public.profiles(user_id) on delete cascade,
-  content text not null,
+  content text,
+  photo text,
+  photo_thumb text,
   created_at timestamptz not null default now()
 );
 create index post_replies_post_id_idx on public.post_replies (post_id, created_at);

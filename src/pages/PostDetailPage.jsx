@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { autoGrow, timeAgo } from '../lib/utils'
+import { autoGrow, compressImage, timeAgo } from '../lib/utils'
+import { uploadPhotoPair } from '../lib/storagePhotos'
 import PostCard from '../components/PostCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Avatar from '../components/Avatar'
+import PhotoLightbox from '../components/PhotoLightbox'
 
 function mapPost(row) {
   return {
@@ -24,6 +26,8 @@ function mapReply(row) {
     id: row.id,
     userId: row.user_id,
     content: row.content,
+    photo: row.photo || null,
+    photoThumb: row.photo_thumb || null,
     createdAt: row.created_at,
     authorName: row.profiles?.display_name || '匿名咖啡愛好者',
     authorAvatar: row.profiles?.avatar_url || null,
@@ -37,6 +41,7 @@ const MENTION_PATTERN =
   /@\[([^\]]+)\]\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/g
 
 function renderMentionContent(content, onMentionClick) {
+  if (!content) return null
   const parts = []
   let lastIndex = 0
   let match
@@ -84,6 +89,14 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   const [mentionStart, setMentionStart] = useState(null)
   const [activeMentions, setActiveMentions] = useState([])
   const textareaRef = useRef(null)
+
+  // reply photo — a single attachment, unlike posts' up-to-5 (replies are
+  // meant to stay lightweight)
+  const [replyPhoto, setReplyPhoto] = useState(null)
+  const [replyPhotoThumb, setReplyPhotoThumb] = useState(null)
+  const [compressingReplyPhoto, setCompressingReplyPhoto] = useState(false)
+  const replyPhotoInputRef = useRef(null)
+  const [lightboxPhoto, setLightboxPhoto] = useState(null)
 
   // reply ids this tab itself just submitted — lets the realtime INSERT
   // echo for that exact reply be skipped by id instead of by author, so
@@ -215,7 +228,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
   async function handleSendReply() {
     if (!userId) return onRequireLogin()
     let text = replyText.trim()
-    if (!text) return
+    if (!text && !replyPhoto) return
     // turn the plain "@Name" text the user sees into the `@[Name](uuid)`
     // markup that gets stored and parsed by both the renderer and the
     // notify_on_mention trigger
@@ -223,6 +236,20 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
       text = text.split(`@${name}`).join(`@[${name}](${mentionedId})`)
     }
     setSending(true)
+
+    let photoUrl = null
+    let photoThumbUrl = null
+    if (replyPhoto) {
+      const uploaded = await uploadPhotoPair(replyPhoto, replyPhotoThumb, userId)
+      if (uploaded.error) {
+        setSending(false)
+        alert(`照片上傳失敗：${uploaded.error.message}`)
+        return
+      }
+      photoUrl = uploaded.photoUrl
+      photoThumbUrl = uploaded.thumbUrl
+    }
+
     // generated up front (rather than reading the id supabase would
     // otherwise assign) so it's already in ownReplyIdsRef before the
     // realtime echo of this insert can possibly arrive
@@ -230,7 +257,7 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     ownReplyIdsRef.current.add(id)
     const { data, error } = await supabase
       .from('post_replies')
-      .insert({ id, post_id: postId, user_id: userId, content: text })
+      .insert({ id, post_id: postId, user_id: userId, content: text || null, photo: photoUrl, photo_thumb: photoThumbUrl })
       .select('*, profiles(display_name, avatar_url)')
       .single()
     setSending(false)
@@ -242,7 +269,34 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
     bumpReplyCount(postId, 1)
     setReplyText('')
     setActiveMentions([])
+    setReplyPhoto(null)
+    setReplyPhotoThumb(null)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
+  }
+
+  async function handleReplyPhotoChange(e) {
+    const file = e.target.files[0]
+    e.target.value = ''
+    if (!file) return
+    setCompressingReplyPhoto(true)
+    try {
+      const [full, thumb] = await Promise.all([
+        compressImage(file, { maxDimension: 1280, quality: 0.8 }),
+        compressImage(file, { maxDimension: 480, quality: 0.7 }),
+      ])
+      setReplyPhoto(full)
+      setReplyPhotoThumb(thumb)
+    } catch (err) {
+      console.error(err)
+      alert('照片處理失敗，請換一張試試')
+    } finally {
+      setCompressingReplyPhoto(false)
+    }
+  }
+
+  function removeReplyPhoto() {
+    setReplyPhoto(null)
+    setReplyPhotoThumb(null)
   }
 
   function handleReplyTextChange(e) {
@@ -337,14 +391,25 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
                   <div className="text-[11px] text-ink-dim">{timeAgo(r.createdAt)}</div>
                 </div>
               </button>
-              <p className="text-[14px] whitespace-pre-wrap">
-                {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`, { viewTransition: true }))}
-              </p>
+              {r.content && (
+                <p className="text-[14px] whitespace-pre-wrap">
+                  {renderMentionContent(r.content, (uid) => navigate(`/community/u/${uid}`, { viewTransition: true }))}
+                </p>
+              )}
+              {r.photoThumb && (
+                <img
+                  src={r.photoThumb}
+                  alt=""
+                  loading="lazy"
+                  onClick={() => setLightboxPhoto(r.photo || r.photoThumb)}
+                  className={`max-h-48 rounded-lg cursor-pointer ${r.content ? 'mt-2' : ''}`}
+                />
+              )}
             </div>
           ))
         )}
 
-        <div className="relative p-3 border-t border-line flex items-end gap-2">
+        <div className="relative p-3 border-t border-line">
           {filteredMentionCandidates.length > 0 && (
             <div className="absolute bottom-full left-3 right-3 mb-1 bg-card border border-line rounded-xl shadow-lg max-h-48 overflow-y-auto z-10">
               {filteredMentionCandidates.map((c) => (
@@ -359,29 +424,63 @@ export default function PostDetailPage({ community, userId, onRequireLogin }) {
               ))}
             </div>
           )}
-          <textarea
-            ref={textareaRef}
-            value={replyText}
-            onChange={handleReplyTextChange}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                if (mentionQuery == null) handleSendReply()
-              }
-            }}
-            placeholder="留下你的回覆...（輸入@可標記）"
-            rows={1}
-            className="flex-1 bg-transparent text-base outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
-          />
-          <button
-            onClick={handleSendReply}
-            disabled={sending || !replyText.trim()}
-            className="px-3.5 py-1.5 bg-cta text-bg rounded-full font-semibold text-sm disabled:opacity-50"
-          >
-            送出
-          </button>
+          {replyPhoto && (
+            <div className="relative inline-block mb-2">
+              <img src={replyPhotoThumb || replyPhoto} alt="" className="w-16 h-16 object-cover rounded-lg" />
+              <button
+                onClick={removeReplyPhoto}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-black/55 text-white flex items-center justify-center text-[10px]"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="flex items-end gap-2">
+            <button
+              onClick={() => replyPhotoInputRef.current?.click()}
+              disabled={sending || compressingReplyPhoto || !!replyPhoto}
+              className="w-8 h-8 flex-shrink-0 rounded-full border border-line text-ink-dim flex items-center justify-center text-sm disabled:opacity-50"
+            >
+              📷
+            </button>
+            <input
+              ref={replyPhotoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleReplyPhotoChange}
+              className="absolute w-px h-px opacity-0 overflow-hidden"
+            />
+            <textarea
+              ref={textareaRef}
+              value={replyText}
+              onChange={handleReplyTextChange}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  if (mentionQuery == null) handleSendReply()
+                }
+              }}
+              placeholder="留下你的回覆...（輸入@可標記）"
+              rows={1}
+              className="flex-1 bg-transparent text-base outline-none placeholder:text-ink-dim/60 resize-none py-1.5 max-h-24 overflow-y-auto"
+            />
+            <button
+              onClick={handleSendReply}
+              disabled={sending || compressingReplyPhoto || (!replyText.trim() && !replyPhoto)}
+              className="px-3.5 py-1.5 bg-cta text-bg rounded-full font-semibold text-sm disabled:opacity-50"
+            >
+              送出
+            </button>
+          </div>
         </div>
       </div>
+
+      <PhotoLightbox
+        photos={lightboxPhoto ? [lightboxPhoto] : []}
+        index={lightboxPhoto ? 0 : null}
+        onClose={() => setLightboxPhoto(null)}
+        onNavigate={() => {}}
+      />
     </div>
   )
 }
