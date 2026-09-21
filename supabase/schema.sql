@@ -273,6 +273,19 @@ create trigger on_post_reply_created
 -- hand just render as literal text since the parenthesized part won't be a
 -- real profile's uuid). Parsed here rather than from a separate mentions
 -- table so there's one source of truth for what a reply actually says.
+--
+-- content is free text with no shape validation at the RLS layer, so the
+-- markup pattern above can be typed by hand (or posted directly via the
+-- API) for ANY real profile uuid, not just the ones the composer's own
+-- picker offers — that picker only lists people who've already liked or
+-- replied on the post, but that's a client-side-only restriction. Without
+-- re-checking that relationship here, anyone could pick an arbitrary,
+-- unrelated user (uuids are visible in public /community/u/<uid> links)
+-- and land them a "mentioned you" notification for a thread they have
+-- nothing to do with — the same targeted-notification-spoofing the
+-- notifications table's insert-only-via-trigger design otherwise exists
+-- to prevent. So mirror the picker's own condition server-side: only
+-- notify someone who is the post's author, or has liked or replied to it.
 create or replace function public.notify_on_mention()
 returns trigger as $$
 declare
@@ -288,6 +301,11 @@ begin
   loop
     if mentioned_id is distinct from new.user_id
        and exists (select 1 from public.profiles where user_id = mentioned_id)
+       and (
+         exists (select 1 from public.posts where id = new.post_id and user_id = mentioned_id)
+         or exists (select 1 from public.post_likes where post_id = new.post_id and user_id = mentioned_id)
+         or exists (select 1 from public.post_replies where post_id = new.post_id and user_id = mentioned_id)
+       )
     then
       insert into public.notifications (recipient_id, actor_id, type, post_id, reply_id)
       values (mentioned_id, new.user_id, 'mention', new.post_id, new.id);
