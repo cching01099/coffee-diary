@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import OptionGrid from './OptionGrid'
 import PhotoDrop from './PhotoDrop'
 import RoastSlider from './RoastSlider'
 import ConfirmDialog from './ConfirmDialog'
+import usePresence, { cssDurationMs } from '../hooks/usePresence'
 
 function parsePosition(str) {
   if (!str) return { x: 50, y: 50 }
@@ -37,6 +38,12 @@ export default function AddCupSheet({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const { mounted, shown } = usePresence(isOpen, cssDurationMs('--panel-close-dur', 350))
+  // editEntry can change the moment the sheet closes (after a delete the index
+  // points at another cup or nothing); keep the last one while it slides away
+  const lastEditEntry = useRef(editEntry)
+  if (isOpen) lastEditEntry.current = editEntry
+  const shownEditEntry = isOpen ? editEntry : lastEditEntry.current
 
   useEffect(() => {
     if (!isOpen) return
@@ -64,7 +71,7 @@ export default function AddCupSheet({
     }
   }, [isOpen, editEntry, dateKey])
 
-  if (!isOpen) return null
+  if (!mounted) return null
 
   const dateLabel = dateKey
     ? new Date(dateKey).toLocaleDateString('zh-TW', { month: 'long', day: 'numeric', weekday: 'long' })
@@ -103,8 +110,12 @@ export default function AddCupSheet({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8">
+    <div className="fixed inset-0 flex items-end justify-center z-50">
+      <div className="sheet-backdrop absolute inset-0 bg-black/50" data-open={shown} />
+      <div
+        className="t-panel-slide relative w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8"
+        data-open={shown}
+      >
         <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button
             onClick={onClose}
@@ -113,7 +124,7 @@ export default function AddCupSheet({
           >
             取消
           </button>
-          <div className="font-semibold text-base">{editEntry ? '編輯這一杯' : '添加一杯'}</div>
+          <div className="font-semibold text-base">{shownEditEntry ? '編輯這一杯' : '添加一杯'}</div>
           <button
             onClick={handleSubmit}
             disabled={saving || deleting}
@@ -133,7 +144,7 @@ export default function AddCupSheet({
             onZoomChange={setPhotoZoom}
           />
 
-          {editEntry && (
+          {shownEditEntry && (
             <div className="mb-5">
               <button
                 onClick={() => setConfirmingDelete(true)}
@@ -147,7 +158,7 @@ export default function AddCupSheet({
 
           <div className="mb-5">
             <div className="text-xs text-ink-dim mb-2">日期</div>
-            {editEntry ? (
+            {shownEditEntry ? (
               <input
                 type="date"
                 required

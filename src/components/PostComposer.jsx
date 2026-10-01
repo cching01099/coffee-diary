@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { autoGrow, compressImage } from '../lib/utils'
+import usePresence, { cssDurationMs } from '../hooks/usePresence'
 
 const MAX_PHOTOS = 5
 
@@ -11,19 +12,22 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
   const [posting, setPosting] = useState(false)
   const inputRef = useRef(null)
   const textareaRef = useRef(null)
+  const { mounted, shown } = usePresence(isOpen, cssDurationMs('--panel-close-dur', 350))
 
-  if (!isOpen) return null
-
-  function reset() {
+  // clear the draft when the composer opens rather than when it closes, so the
+  // text and photos stay visible while the sheet slides away
+  useEffect(() => {
+    if (!isOpen) return
     setContent('')
     setPhotos([])
     setPhotoThumbs([])
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-  }
+  }, [isOpen])
+
+  if (!mounted) return null
 
   function handleClose() {
     if (posting) return
-    reset()
     onClose()
   }
 
@@ -65,13 +69,16 @@ export default function PostComposer({ isOpen, onClose, onSubmit }) {
       alert(`發布失敗：${error.message}`)
       return
     }
-    reset()
     onClose()
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8">
+    <div className="fixed inset-0 flex items-end justify-center z-50">
+      <div className="sheet-backdrop absolute inset-0 bg-black/50" data-open={shown} />
+      <div
+        className="t-panel-slide relative w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8"
+        data-open={shown}
+      >
         <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button onClick={handleClose} disabled={posting} className="px-3.5 py-1.5 rounded-full border border-line text-ink-dim text-sm disabled:opacity-50">
             取消

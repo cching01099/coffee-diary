@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { timeAgo } from '../lib/utils'
+import usePresence, { cssDurationMs } from '../hooks/usePresence'
 
 function notificationText(n) {
   if (n.type === 'like') return `${n.actorName} 對你的貼文按了讚`
@@ -10,6 +11,7 @@ function notificationText(n) {
 
 export default function NotificationBell({ notifications, unreadCount, markAsRead, markAllAsRead }) {
   const [open, setOpen] = useState(false)
+  const { mounted, shown } = usePresence(open, cssDurationMs('--dropdown-close-dur', 150))
   const navigate = useNavigate()
 
   function handleToggle() {
@@ -34,38 +36,39 @@ export default function NotificationBell({ notifications, unreadCount, markAsRea
         )}
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-72 bg-card border border-line rounded-xl z-50 shadow-[0_8px_24px_rgba(92,56,38,0.18)] overflow-hidden">
-            <div className="max-h-80 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="px-4 py-6 text-center text-sm text-ink-dim">還沒有通知</div>
-              ) : (
-                notifications.slice(0, 10).map((n) => (
-                  <button
-                    key={n.id}
-                    onClick={() => handleClick(n)}
-                    className={`w-full text-left px-3.5 py-3 border-b border-line last:border-b-0 ${!n.read ? 'bg-accent/5' : ''}`}
-                  >
-                    <div className="text-[13px] text-ink">{notificationText(n)}</div>
-                    {n.postSnippet && <div className="text-[12px] text-ink-dim truncate mt-0.5">{n.postSnippet}</div>}
-                    <div className="text-[11px] text-ink-dim mt-1">{timeAgo(n.createdAt)}</div>
-                  </button>
-                ))
-              )}
-            </div>
-            <button
-              onClick={() => {
-                setOpen(false)
-                navigate('/community/notifications', { viewTransition: true })
-              }}
-              className="w-full text-center py-2.5 text-sm text-accent font-medium border-t border-line"
-            >
-              查看全部
-            </button>
+      {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />}
+      {mounted && (
+        <div
+          data-origin="top-right"
+          className={`t-dropdown ${shown ? 'is-open' : !open ? 'is-closing' : ''} absolute right-0 mt-2 w-72 bg-card border border-line rounded-xl z-50 shadow-[0_8px_24px_rgba(92,56,38,0.18)] overflow-hidden`}
+        >
+          <div className="max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-ink-dim">還沒有通知</div>
+            ) : (
+              notifications.slice(0, 10).map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() => handleClick(n)}
+                  className={`w-full text-left px-3.5 py-3 border-b border-line last:border-b-0 ${!n.read ? 'bg-accent/5' : ''}`}
+                >
+                  <div className="text-[13px] text-ink">{notificationText(n)}</div>
+                  {n.postSnippet && <div className="text-[12px] text-ink-dim truncate mt-0.5">{n.postSnippet}</div>}
+                  <div className="text-[11px] text-ink-dim mt-1">{timeAgo(n.createdAt)}</div>
+                </button>
+              ))
+            )}
           </div>
-        </>
+          <button
+            onClick={() => {
+              setOpen(false)
+              navigate('/community/notifications', { viewTransition: true })
+            }}
+            className="w-full text-center py-2.5 text-sm text-accent font-medium border-t border-line"
+          >
+            查看全部
+          </button>
+        </div>
       )}
     </div>
   )

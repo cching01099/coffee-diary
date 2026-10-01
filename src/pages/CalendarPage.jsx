@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { fmtKey, fmtNum, CAFFEINE_DOSE_G, CAFFEINE_MG_PER_G } from '../lib/utils'
 import AddCupSheet from '../components/AddCupSheet'
+import SkeletonImage from '../components/SkeletonImage'
 
 const today = new Date()
 const todayKey = fmtKey(today)
@@ -103,21 +104,17 @@ export default function CalendarPage({ data }) {
               >
                 {hasEntry ? (
                   photoEntry ? (
-                    <>
-                      <div className="absolute inset-0 bg-line animate-pulse" />
-                      <img
-                        src={photoEntry.photoThumb || photoEntry.photo}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="absolute inset-0 w-full h-full object-cover rounded-lg"
-                        style={{
-                          objectPosition: photoEntry.photoPosition || '50% 50%',
-                          transform: `scale(${photoEntry.photoZoom || 1})`,
-                          transformOrigin: photoEntry.photoPosition || '50% 50%',
-                        }}
-                      />
-                    </>
+                    <SkeletonImage
+                      src={photoEntry.photoThumb || photoEntry.photo}
+                      loading="lazy"
+                      decoding="async"
+                      className="rounded-lg"
+                      style={{
+                        objectPosition: photoEntry.photoPosition || '50% 50%',
+                        transform: `scale(${photoEntry.photoZoom || 1})`,
+                        transformOrigin: photoEntry.photoPosition || '50% 50%',
+                      }}
+                    />
                   ) : (
                     <div className="w-full h-full rounded-lg bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519] flex items-center justify-center">☕</div>
                   )
@@ -162,21 +159,16 @@ export default function CalendarPage({ data }) {
           >
             <div className="relative w-[46px] h-[46px] rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center text-xl">
               {e.photo ? (
-                <>
-                  <div className="absolute inset-0 bg-line animate-pulse" />
-                  <img
-                    src={e.photoThumb || e.photo}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover"
-                    style={{
-                      objectPosition: e.photoPosition || '50% 50%',
-                      transform: `scale(${e.photoZoom || 1})`,
-                      transformOrigin: e.photoPosition || '50% 50%',
-                    }}
-                  />
-                </>
+                <SkeletonImage
+                  src={e.photoThumb || e.photo}
+                  loading="lazy"
+                  decoding="async"
+                  style={{
+                    objectPosition: e.photoPosition || '50% 50%',
+                    transform: `scale(${e.photoZoom || 1})`,
+                    transformOrigin: e.photoPosition || '50% 50%',
+                  }}
+                />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-[#8A5A38] via-[#5C3826] to-[#3E2519] flex items-center justify-center">☕</div>
               )}

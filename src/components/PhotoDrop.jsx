@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { compressImage } from '../lib/utils'
+import SkeletonImage from './SkeletonImage'
 
 function clamp(v, min, max) {
   return Math.min(max, Math.max(min, v))
@@ -156,11 +157,11 @@ export default function PhotoDrop({
       {!photo && <span>{compressing ? '照片處理中...' : '拍照或選擇相簿 📷'}</span>}
       {photo && (
         <>
-          <img
+          {/* the full-size photo comes from Storage and can take a moment */}
+          <SkeletonImage
             src={photo}
-            alt=""
             draggable={false}
-            className="w-full h-full object-cover pointer-events-none"
+            className="pointer-events-none"
             style={{
               objectPosition: `${position.x}% ${position.y}%`,
               transform: `scale(${zoom})`,

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fmtKey } from '../lib/utils'
 import ConfirmDialog from './ConfirmDialog'
+import usePresence, { cssDurationMs } from '../hooks/usePresence'
 
 const blank = { date: '', beanBrand: '', beanWeight: '', beanPrice: '', milkBrand: '', milkVolume: '', milkPrice: '' }
 
@@ -22,13 +23,19 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const { mounted, shown } = usePresence(isOpen, cssDurationMs('--panel-close-dur', 350))
+  // keep the last editPurchase while the sheet slides away (after a delete the
+  // parent's index points at another purchase or nothing)
+  const lastEditPurchase = useRef(editPurchase)
+  if (isOpen) lastEditPurchase.current = editPurchase
+  const shownEditPurchase = isOpen ? editPurchase : lastEditPurchase.current
 
   useEffect(() => {
     if (!isOpen) return
     setForm(editPurchase ? { ...editPurchase } : { ...blank, date: fmtKey(new Date()) })
   }, [isOpen, editPurchase])
 
-  if (!isOpen) return null
+  if (!mounted) return null
 
   function field(key) {
     return {
@@ -51,8 +58,12 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">
-      <div className="w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8">
+    <div className="fixed inset-0 flex items-end justify-center z-50">
+      <div className="sheet-backdrop absolute inset-0 bg-black/50" data-open={shown} />
+      <div
+        className="t-panel-slide relative w-full max-w-md bg-bg rounded-t-[20px] max-h-[88dvh] overflow-y-auto pb-8"
+        data-open={shown}
+      >
         <div className="sticky top-0 z-10 bg-bg flex justify-between items-center px-5 py-5 border-b border-line">
           <button
             onClick={onClose}
@@ -61,7 +72,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
           >
             取消
           </button>
-          <div className="font-semibold text-base">{editPurchase ? '編輯採購' : '新增採購'}</div>
+          <div className="font-semibold text-base">{shownEditPurchase ? '編輯採購' : '新增採購'}</div>
           <button
             onClick={handleSubmit}
             disabled={saving || deleting}
@@ -72,7 +83,7 @@ export default function AddPurchaseSheet({ isOpen, onClose, editPurchase, onSubm
         </div>
 
         <div className="px-5 pt-5">
-          {editPurchase && (
+          {shownEditPurchase && (
             <div className="mb-5">
               <button
                 onClick={() => setConfirmingDelete(true)}
