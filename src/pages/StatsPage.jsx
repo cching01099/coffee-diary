@@ -18,7 +18,20 @@ function RankCard({ label, countMap, open, onToggle }) {
           <div className="font-bold text-lg text-accent mt-1">{topName}</div>
         </div>
         {hasData && (
-          <span className={`text-ink-dim text-sm transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+          // an SVG chevron instead of the "▾" glyph, which Inter draws tiny and
+          // riding high in the line box, so it never centred against the two lines
+          <svg
+            viewBox="0 0 20 20"
+            className={`w-5 h-5 flex-shrink-0 text-ink-dim transition-transform ${open ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 7.5l5 5 5-5" />
+          </svg>
         )}
       </div>
       {hasData && open && (
