@@ -52,7 +52,7 @@ function GuestShell() {
           </button>
         }
       />
-      {promptOpen && <LoginPromptModal onClose={() => setPromptOpen(false)} />}
+      <LoginPromptModal open={promptOpen} onClose={() => setPromptOpen(false)} />
     </>
   )
 }

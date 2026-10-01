@@ -29,7 +29,7 @@ export default function BottomTabBar() {
 
   return (
     <div
-      className={`fixed left-0 right-0 flex justify-center transition-transform duration-300 ease-out ${
+      className={`fixed left-0 right-0 flex justify-center transition-transform duration-300 ease-out motion-reduce:transition-none ${
         visible ? 'translate-y-0' : 'translate-y-24'
       }`}
       style={{ bottom: 'max(16px, env(safe-area-inset-bottom))' }}
