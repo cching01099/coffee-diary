@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { timeAgo } from '../lib/utils'
 import Avatar from './Avatar'
 import PhotoLightbox from './PhotoLightbox'
+import LinkPreviewCard from './LinkPreviewCard'
+import { firstUrl, linkify } from './LinkText'
 
 function PhotoCarousel({ photos, compact, onOpenLightbox }) {
   if (!photos || photos.length === 0) return null
@@ -80,6 +82,7 @@ export default function PostCard({
       ? post.photos
       : post.photoThumbs
   const fullPhotos = post.photos?.length ? post.photos : post.photoThumbs
+  const previewUrl = firstUrl(post.content)
 
   return (
     <div className="bg-card rounded-2xl border border-line p-4 mb-3">
@@ -115,7 +118,8 @@ export default function PostCard({
       </div>
 
       <div onClick={() => onOpen(post.id)} className="cursor-pointer">
-        {post.content && <p className="text-[14.5px] whitespace-pre-wrap mb-2.5">{post.content}</p>}
+        {post.content && <p className="text-[14.5px] whitespace-pre-wrap mb-2.5">{linkify(post.content)}</p>}
+        {previewUrl && <LinkPreviewCard url={previewUrl} compact={compact} />}
         <PhotoCarousel photos={displayPhotos} compact={compact} onOpenLightbox={setLightboxIndex} />
       </div>
 

@@ -7,6 +7,7 @@ import PostCard from '../components/PostCard'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Avatar from '../components/Avatar'
 import PhotoLightbox from '../components/PhotoLightbox'
+import { linkify } from '../components/LinkText'
 
 function mapPost(row) {
   return {
@@ -47,7 +48,7 @@ function renderMentionContent(content, onMentionClick) {
   let match
   MENTION_PATTERN.lastIndex = 0
   while ((match = MENTION_PATTERN.exec(content))) {
-    if (match.index > lastIndex) parts.push(content.slice(lastIndex, match.index))
+    if (match.index > lastIndex) parts.push(linkify(content.slice(lastIndex, match.index), `t${lastIndex}`))
     const [full, name, uid] = match
     parts.push(
       <button
@@ -63,7 +64,7 @@ function renderMentionContent(content, onMentionClick) {
     )
     lastIndex = match.index + full.length
   }
-  if (lastIndex < content.length) parts.push(content.slice(lastIndex))
+  if (lastIndex < content.length) parts.push(linkify(content.slice(lastIndex), `t${lastIndex}`))
   return parts
 }
 
