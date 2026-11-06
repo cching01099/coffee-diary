@@ -12,7 +12,7 @@ export default function AccountMenu({ displayName, avatarUrl, onSignOut }) {
         onClick={() => setOpen((v) => !v)}
         className="w-8 h-8 rounded-full bg-cta text-bg flex items-center justify-center text-sm font-semibold overflow-hidden"
       >
-        {avatarUrl ? <img src={avatarUrl} alt="" className="w-full h-full object-cover" /> : initial}
+        {avatarUrl ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" /> : initial}
       </button>
 
       {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />}
