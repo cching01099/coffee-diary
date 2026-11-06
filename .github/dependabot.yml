@@ -12,9 +12,15 @@ updates:
       # Bundle routine minor/patch bumps into one PR instead of one per package
       minor-and-patch:
         update-types: ["minor", "patch"]
+      # Major upgrades usually break the build; one PR to look at, not one per package
+      major:
+        update-types: ["major"]
 
   # Keep the GitHub Actions used in .github/workflows up to date too
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    groups:
+      actions:
+        patterns: ["*"]
