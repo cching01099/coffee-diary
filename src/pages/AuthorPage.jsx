@@ -45,7 +45,7 @@ export default function AuthorPage({ userId, onRequireLogin }) {
 
       <div className="flex items-center gap-3 pb-5 mb-5 border-b border-line">
         {avatarUrl ? (
-          <img src={avatarUrl} alt="" className="w-14 h-14 rounded-full object-cover" />
+          <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-full object-cover" />
         ) : (
           <div className="w-14 h-14 rounded-full bg-accent/20 text-accent flex items-center justify-center font-semibold text-lg">
             {(displayName || '?').slice(0, 1)}
