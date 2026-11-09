@@ -8,13 +8,16 @@ updates:
       day: "monday"
       timezone: "Asia/Taipei"
     open-pull-requests-limit: 5
+    # No major-version PRs: those upgrades need migration work and are done by
+    # hand when we choose to (tracked in a GitHub issue). Vulnerability alerts
+    # are not affected by this.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       # Bundle routine minor/patch bumps into one PR instead of one per package
       minor-and-patch:
         update-types: ["minor", "patch"]
-      # Major upgrades usually break the build; one PR to look at, not one per package
-      major:
-        update-types: ["major"]
 
   # Keep the GitHub Actions used in .github/workflows up to date too
   - package-ecosystem: "github-actions"
